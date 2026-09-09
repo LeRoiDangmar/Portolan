@@ -1,0 +1,11 @@
+
+# ------------------------------------------------------------------------------
+# <type>(<optional scope>): <short imperative description>
+#   • ≤ 72 chars, lowercase, no trailing period
+#   • types: feat fix docs style refactor perf test build ci chore revert
+#   • breaking change: `feat!:` or a `BREAKING CHANGE:` footer
+#
+# <body — what changed and why, not how>
+#
+# <footer — BREAKING CHANGE: …  /  refs #123>
+# ------------------------------------------------------------------------------

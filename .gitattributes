@@ -1,0 +1,11 @@
+# Normalise line endings so hooks and diffs behave the same on every machine.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

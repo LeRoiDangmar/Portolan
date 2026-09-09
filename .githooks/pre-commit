@@ -1,0 +1,60 @@
+#!/bin/sh
+# Enforce the branch-naming convention and catch a few things that must never
+# be committed — see CLAUDE.md (Git workflow).
+# Bypass in exceptional cases with: git commit --no-verify
+. "$(dirname "$0")/_common.sh"
+
+status=0
+
+# ---------------------------------------------------------------- branch name
+# `symbolic-ref` also reports the branch before the very first commit; it fails
+# on a detached HEAD (rebase / cherry-pick / bisect), which we let through.
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo HEAD)
+
+if [ "$branch" != "HEAD" ]; then
+  if hook_is_protected "$branch"; then
+    {
+      echo "✖ pre-commit: refusing to commit directly to '$branch'."
+      echo "  Create a feat/… (or fix/…, chore/…, docs/…, …) branch first (CLAUDE.md)."
+      echo "  Bypass: git commit --no-verify"
+    } >&2
+    exit 1
+  fi
+
+  pattern="^($(hook_types_alt))/[a-z0-9][a-z0-9._-]*$"
+  if ! printf '%s' "$branch" | grep -Eq "$pattern"; then
+    {
+      echo "✖ pre-commit: branch '$branch' does not follow the naming convention."
+      echo "  Format: <type>/<kebab-description>   e.g. feat/admin-ui, fix/login-crash"
+      echo "  Types:  $(hook_types)"
+      echo "  Bypass: git commit --no-verify"
+    } >&2
+    status=1
+  fi
+fi
+
+# ------------------------------------------------------------- secret files
+# Blocks real secret files; sample/example files stay allowed.
+secrets=$(git diff --cached --name-only --diff-filter=ACM | grep -E \
+  '(^|/)\.env(\.[A-Za-z0-9_-]+)?$|\.(pem|p12|pfx)$|(^|/)id_(rsa|dsa|ecdsa|ed25519)$' |
+  grep -Ev '\.(example|sample|template|dist)$' || true)
+if [ -n "$secrets" ]; then
+  {
+    echo "✖ pre-commit: refusing to commit files that usually hold secrets:"
+    echo "$secrets" | sed 's/^/    /'
+    echo "  Commit a redacted .env.example instead, and add the real file to .gitignore."
+    echo "  Bypass: git commit --no-verify"
+  } >&2
+  status=1
+fi
+
+# --------------------------------------------------------- conflict markers
+if git diff --cached --diff-filter=ACM -U0 | grep -Eq '^\+(<{7}|>{7})( |$)'; then
+  {
+    echo "✖ pre-commit: staged changes contain unresolved merge-conflict markers."
+    echo "  Bypass: git commit --no-verify"
+  } >&2
+  status=1
+fi
+
+exit $status

@@ -1,0 +1,80 @@
+#!/bin/sh
+# Guard the shared branches — see CLAUDE.md (Git workflow).
+# Bypass in exceptional cases with: git push --no-verify
+#
+# Optional per-repo settings:
+#   git config hooks.protectedBranches "main master staging"
+#   git config hooks.prePushVerify "npm test"      # run before the push
+#   git config hooks.allowPushProtected true       # allow direct pushes to protected branches
+. "$(dirname "$0")/_common.sh"
+
+remote="$1"
+zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+status=0
+pushing=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$remote_ref" ] || continue
+  branch=${remote_ref#refs/heads/}
+  pushing=1
+
+  # ---------------------------------------------------------- protected refs
+  if hook_is_protected "$branch" &&
+     [ "$(git config --bool --get hooks.allowPushProtected 2>/dev/null)" != "true" ]; then
+    if [ "$local_sha" = "$zero" ]; then
+      echo "✖ pre-push: refusing to delete the protected branch '$branch' on '$remote'." >&2
+    else
+      {
+        echo "✖ pre-push: refusing to push directly to the protected branch '$branch' on '$remote'."
+        echo "  Open a merge/pull request from your <type>/<description> branch instead (CLAUDE.md)."
+      } >&2
+    fi
+    echo "  Bypass: git push --no-verify" >&2
+    status=1
+    continue
+  fi
+
+  [ "$local_sha" = "$zero" ] && continue   # branch deletion, nothing to inspect
+
+  # ------------------------------------------------------------- push range
+  if [ "$remote_sha" = "$zero" ]; then
+    range=$(git rev-list "$local_sha" --not --remotes="$remote" 2>/dev/null)
+  else
+    range=$(git rev-list "$remote_sha..$local_sha" 2>/dev/null)
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      echo "⚠️  pre-push: '$branch' is not a fast-forward — this rewrites history on '$remote'." >&2
+    fi
+  fi
+
+  # -------------------------------------------------- work-in-progress commits
+  wip=$(for sha in $range; do
+    subject=$(git log -1 --format=%s "$sha")
+    case "$subject" in
+      fixup!*|squash!*|WIP*|wip*|"amend!"*) printf '%s %s\n' "$(git rev-parse --short "$sha")" "$subject" ;;
+    esac
+  done)
+  if [ -n "$wip" ]; then
+    {
+      echo "✖ pre-push: '$branch' still contains work-in-progress commits:"
+      echo "$wip" | sed 's/^/    /'
+      echo "  Run: git rebase -i --autosquash"
+      echo "  Bypass: git push --no-verify"
+    } >&2
+    status=1
+  fi
+done
+
+# --------------------------------------------------------------- verify hook
+verify=$(git config --get hooks.prePushVerify)
+if [ "$status" -eq 0 ] && [ "$pushing" -eq 1 ] && [ -n "$verify" ]; then
+  echo "▶ pre-push: running \`$verify\`…"
+  if ! sh -c "$verify"; then
+    {
+      echo "✖ pre-push: \`$verify\` failed — push aborted."
+      echo "  Bypass: git push --no-verify"
+    } >&2
+    status=1
+  fi
+fi
+
+exit $status
