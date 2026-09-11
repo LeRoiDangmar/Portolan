@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<!--
+  UX Design Validation Report — Portolan.
+  Consolidated from review-rubric.md, review-legibility-at-scale.md,
+  review-brief-fidelity.md and review-accessibility.md.
+  Self-contained: no external stylesheets, scripts, fonts or images.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: Portolan</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Portolan — UX Design Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/ux-designs/ux-Portolan-2026-09-10/ · DESIGN.md + EXPERIENCE.md</div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p>This is an unusually disciplined spine pair: the frontmatter parses, 122 colour tokens are all six-digit hex with a complete <code>-light</code> twin for every one, all 84 distinct <code>{path.to.token}</code> references resolve, component names map 1:1 across four separate lists, the canonical DESIGN.md section order is held exactly, and every number in the contrast table was independently recomputed and is correct. A consumer can source-extract most of this cleanly. What it is not yet is <em>safe</em> to extract. Two load-bearing colour statements are wrong or contradictory — the identifier channel that Flow 1's climax rests on is specified at 3.42:1 while the file's own table claims 15.0:1 for it, and the Node view's subject label is an untokenised raw hex measuring 2.49:1 with no light-mode value. A third of the surface area a consumer would build (five named on-screen controls, the Node view's foreground rendering, every detail-panel state, hover) is named but never committed, and the single "known drift" note in the pair is itself stale — it disparages a reference artifact that was already corrected. Fix the two criticals and the eight highs and this becomes a contract. Everything else is polish.</p>
+      <p>The three extra reviewers shift that picture, and the way they shift it is worth naming. Two of them — the legibility-at-scale adversary working from a constructed 325-object cluster, and the accessibility auditor working from CIELAB colour distances — arrived at the <strong>same critical by entirely different routes</strong>: the six-hue zone rotation's declared rescue, the network pastille, runs the <em>identical</em> six-step rotation, so network 7's hexagon is network 1's hexagon and the stated mitigation is the thing it is mitigating. One reviewer found it by counting networks on a realistic swarm; the other found it by simulating dichromacy on the hex values. When arithmetic and colour science converge on one sentence from opposite ends, that sentence is not a wording slip — and the memlog confirms it was a facilitator error the user then decided on top of. The same convergence recurs at lower severity on the 9px type floor (four of eleven roles below it at scale 1.00, found twice independently) and on the bubble identifier channel (3.42:1 against a declared 7:1 floor, found twice with identical figures). Beyond the overlap, each extra lens opens ground the rubric could not see: the legibility review shows the network channel <em>breaks</em> rather than degrades in the one frame the product is judged on; the brief-fidelity review finds three silent contradictions, the worst of which shipped a false security guarantee into permanent chrome; and the accessibility review shows the Accessibility Floor is honest about what it refuses and dishonest about the one thing it claims to have solved. Eight of these findings have since been ruled on by the user and are marked below rather than removed.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Flow coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Token completeness</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Component coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">State coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Visual reference coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-thin)">thin</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Bloat &amp; overspecification</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Inheritance discipline</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <!-- ===================== 1. FLOW COVERAGE ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>1. Flow coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Sources (<code>brief.md</code>, <code>addendum.md</code>) name no formal user journeys — they carry two personas ("The inheritor", "The Swarm operator"), a founding scenario, success criteria, and two verbatim filter-shaped jobs. Against those: three Key Flows, each with a named protagonist, numbered steps, explicitly labelled climax beats (Flow 1 carries three, matching the three discoveries recorded in <code>.memlog.md</code>), and a failure-path block. A "Journey coverage" subsection (EXPERIENCE.md:257–259) maps every IA surface back to a flow. Mechanically this is the strongest category in the pair.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">The brief's second verbatim filter job has no mechanism anywhere</h3>
+              <span class="finding-location">EXPERIENCE.md:87–90</span>
+            </header>
+            <div class="finding-note"><em>"show me only what touches <code>backend</code>"</em> (brief.md §The Solution) has no mechanism in EXPERIENCE.md and no flow exercising it. Filters are type-level only ("Filters remove object types from the map (volumes, networks, services…)", EXPERIENCE.md:89); reachability highlight dims rather than removes (line 90); <em>Isolate</em> takes a service as subject, never a network (line 87). The word <code>backend</code> appears in EXPERIENCE.md exactly once, inside the Echo bubble row.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled a relational filter — <em>"Keep only this"</em> — which promotes the existing reachable-set highlight into a real filter that removes the rest, reusing the adjustable hop reach and honouring "highlight dims, filter removes".</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a scope-to-network filter (or extend <em>Isolate</em> to accept a network subject) plus a flow step, or mark the omission <code>[DEPARTS FROM BRIEF]</code> with the reason — every other brief contradiction in this pair is marked.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Flow 2's heading names a persona the source does not</h3>
+              <span class="finding-location">EXPERIENCE.md:217</span>
+            </header>
+            <div class="finding-note">The heading calls the persona "the homelabber", not the source's persona name "The Swarm operator" (brief.md §Who This Serves). The <code>[ASSUMPTION]</code> note directly beneath does trace it correctly, but the heading itself is the drifted string a consumer will copy.</div>
+            <div class="finding-fix"><strong>Fix:</strong> retitle "Tom, the Swarm operator".</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Flow 2's climax is a long untranslated French quotation</h3>
+              <span class="finding-location">EXPERIENCE.md:228</span>
+            </header>
+            <div class="finding-note">Deliberate — "The climax is Jules's own, verbatim" — but the file is otherwise English-only per its own Foundation row, and a downstream reader cannot act on it.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep the quote, add the one-line English gloss.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 2. TOKEN COMPLETENESS ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>2. Token completeness</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Extracted: 122 colour tokens, 12 typography roles, <code>rounded</code> (6 keys), <code>spacing</code> (18 keys), plus seven declared extension namespaces (<code>motion</code>, <code>elevation</code>, <code>opacity</code>, <code>stroke</code>, <code>shape</code>, <code>density</code>, <code>layout</code>) and 17 <code>components</code> entries — 421 leaf paths in total. Every colour value is a valid six-digit hex; <strong>every</strong> non-<code>-light</code> token has a <code>-light</code> twin and every <code>-light</code> token has a base (zero exceptions). 84 distinct <code>{path.to.token}</code> references across both files; all resolve except one wildcard and the generic <code>{token}</code> placeholder in prose. The contrast table (DESIGN.md:535–548) covers 12 combinations with per-row floors — all recomputed (15.0, 18.1, 15.1, 3.3/3.0, 1.18/1.13, 3.2, 4.2, 4.4…) and every stated number is accurate. That table is genuinely measured, not asserted. What it does not measure is text.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">The identifier channel contradicts itself — 15.0:1 claimed, 3.42:1 specified</h3>
+              <span class="finding-location">DESIGN.md:537 vs DESIGN.md:644</span>
+            </header>
+            <div class="finding-note">The contrast table's first row states <em>"Identifier on bubble body — 15.0 / 18.1 — floor 7:1 — this is the channel <code>pgdata</code> vs <code>pg-data</code> is read on"</em>, but Components → Bubble sets <em>"identifier beneath in <code>{typography.bubble-id}</code> at <code>{colors.ink-3}</code>"</em> — <code>#5D6A74</code> on <code>{colors.body-mid}</code> <code>#0B1116</code> measures <strong>3.42:1</strong> dark and <strong>4.74:1</strong> light. A consumer implementing the component ships the file's own declared 7:1 channel at less than half its floor — below 4.5:1 in dark, on 9px type, a 4.4× gap between the asserted number and the specified one. The 15.0 figure is <code>{colors.ink}</code> (14.98 — correct arithmetic for the wrong token), which is presumably the <em>name</em>'s colour; the bubble <strong>name</strong> on the same line is given <code>{typography.bubble-name}</code> and <strong>no colour token at all</strong>. This is the single row a builder is most likely to trust without rechecking.</div>
+            <div class="finding-note"><strong>Converges:</strong> found independently by the rubric walker and the accessibility auditor, with identical recomputed figures.</div>
+            <div class="finding-fix"><strong>Fix:</strong> decide which colour the identifier takes and assign it in Components → Bubble; set it to <code>{colors.ink}</code> (14.98 / 18.08, which is what the table describes) or <code>{colors.ink-2}</code> (7.33), give the name an explicit colour token, re-measure the row against the assigned token, and name the token each table row measures. <code>ink-3</code> and a 7:1 floor cannot both stand.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">The node backdrop label is an untokenised raw hex at 2.49:1, the only colour with no light twin</h3>
+              <span class="finding-location">DESIGN.md:697</span>
+            </header>
+            <div class="finding-note"><code>#46535C</code> has no <code>colors:</code> token, <strong>no <code>-light</code> counterpart anywhere in the file</strong> — the only colour in the document without one — and it measures <strong>2.49:1</strong> against <code>band-a</code> and <strong>2.54:1</strong> against <code>band-b</code> in dark mode, at 10px. It is the label of the surface Flow 3 is entirely about. It appears in no contrast row.</div>
+            <div class="finding-note"><strong>Converges:</strong> the accessibility auditor recomputed the same 2.49–2.54 range independently and names node labels as "what Flow 3 is read on".</div>
+            <div class="finding-fix"><strong>Fix:</strong> promote to <code>colors.node-label</code> / <code>colors.node-label-light</code>, raise the dark value to ≥4.5:1 against the bands, add a table row.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The contrast table covers only map marks; three of the five colour-carrying text roles fail 4.5:1</h3>
+              <span class="finding-location">DESIGN.md:535–548 · Components: Bubble, Detail panel, Left menu, Node backdrop</span>
+            </header>
+            <div class="finding-note">Nine of twelve rows verify to ±0.05, but <strong>zero of the five text roles that carry an explicit colour token appear in the table, and three of those five fail 4.5:1</strong>: <code>bubble-id</code> at <code>ink-3</code> <strong>3.42</strong> / 4.74; detail-panel keys and left-menu counts at <code>{colors.ink-3}</code> on <code>{colors.panel}</code> (DESIGN.md:711, 721) = <strong>3.51:1</strong> dark / <strong>3.84:1</strong> light, below 4.5:1 for 13px sans and 11px mono; node-backdrop labels at <code>#46535C</code> <strong>2.49–2.54</strong> dark. The four chrome components (left menu, detail panel, bottom tab bar, chart legend) carry no measured combination at all.</div>
+            <div class="finding-note"><strong>Converges:</strong> rubric walker and accessibility auditor, same components, same figures.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a chrome-text block to the table and lift <code>ink-3</code> where it carries text — <code>ink-2</code> <code>#94A3AD</code> gives 7.52:1 on the panel at no cost to the register — or restrict <code>ink-3</code> to non-text use.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Twelve raw hexes live inside <code>components:</code> with no token behind them, two packing both modes into one string</h3>
+              <span class="finding-location">DESIGN.md frontmatter → components</span>
+            </header>
+            <div class="finding-note"><code>node-backdrop.band-a</code> / <code>band-b</code> / <code>band-a-light</code> / <code>divider</code>, <code>orphan-bubble.fill</code> / <code>fill-light</code>, <code>detail-panel.header</code>, <code>bottom-tab-bar.background</code> / <code>background-light</code>, <code>chart-legend.background</code> / <code>background-light</code>. Two of them pack <strong>both modes into a single string</strong> that no resolver can split: <code>detail-panel.header: '#0C1015 / #DDE4E8'</code> and <code>node-backdrop.divider: '0.8px #151D23 / #D4DCE1'</code>.</div>
+            <div class="finding-fix"><strong>Fix:</strong> promote all twelve to <code>colors:</code> with <code>-light</code> twins and reference them; split the two two-mode strings into separate keys.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title"><code>{colors.pastille-*}</code> is a wildcard, not a resolvable path</h3>
+              <span class="finding-location">EXPERIENCE.md:76, 158</span>
+            </header>
+            <div class="finding-note">The only unresolvable reference in the pair.</div>
+            <div class="finding-fix"><strong>Fix:</strong> name the four family prefixes explicitly, or point at DESIGN.md's Pastille section instead.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Orphan tokens — defined, never bound, and in one case contradicting a stated ratio</h3>
+              <span class="finding-location">DESIGN.md frontmatter</span>
+            </header>
+            <div class="finding-note"><code>opacity.reticle-fine</code> (0.55) and <code>opacity.reticle-coarse</code> (0.80) exist but there is no reticle component and no prose reference; <code>opacity.zone-isoline</code> (0.85) is never applied — <code>stroke.zone.isoline</code> omits opacity entirely, and if 0.85 does apply then the table's "Zone isoline over its own tint 3.2–3.7" is overstated; <code>typography.graduation</code>, <code>spacing.bezel</code> (prose hardcodes "A 12px graduated lunette"), <code>spacing.panel-pad</code>, <code>colors.rule</code> / <code>rule-light</code>, <code>colors.field</code> / <code>field-light</code> are all unused. <code>colors.steel</code> is described as a first-class metal ("the second rank", DESIGN.md:516) but its hex is restated verbatim as <code>pastille-stack-2</code> rather than referenced.</div>
+            <div class="finding-note"><strong>Converges:</strong> the accessibility auditor settled the <code>opacity.zone-isoline</code> ambiguity by computing the composited mark — 2.68–3.03:1, failing on five of six tints. See the accessibility section.</div>
+            <div class="finding-fix"><strong>Fix:</strong> bind each or drop it; decide the isoline opacity and re-measure that row.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The dark/light resolution rule lives only in a YAML comment</h3>
+              <span class="finding-location">DESIGN.md:10–15</span>
+            </header>
+            <div class="finding-note">"a bare token name is the DARK value; the <code>-light</code> suffix carries the light value" is stated only in frontmatter, and no component ever names a light token — every one references the bare name. A consumer must infer suffix-swapping.</div>
+            <div class="finding-fix"><strong>Fix:</strong> restate the rule in the body prose, where a human reading the rendered Markdown will see it.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 3. COMPONENT COVERAGE ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>3. Component coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>17 <code>components:</code> frontmatter entries; 17 matching <code>###</code> visual specs in DESIGN.md in the same order; 23 rows in EXPERIENCE.md's Component Patterns. Kebab-case keys map 1:1 onto Title-case headings and Title-case table rows with no drift in either direction. Behavioural rules are real rules — the Bubble, Echo bubble and Left menu rows each carry several enforceable statements, not one-word descriptions.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Five named components have no frontmatter entry and no committed visual spec</h3>
+              <span class="finding-location">EXPERIENCE.md:87, 91–94 · DESIGN.md:747–751</span>
+            </header>
+            <div class="finding-note"><em>Fit to chart</em>, <em>Reorganise</em>, <em>Isolate</em>, <em>Export (SVG / PNG)</em>, <em>Survey stamp</em>. All five have EXPERIENCE.md rows; DESIGN.md covers all five in one prose block marked <code>[ASSUMPTION]</code>. A consumer extracting <code>components:</code> gets 17 of 22. The gap is honestly flagged in both Open Questions sections, which is the right handling — but the shape is still missing.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add provisional frontmatter entries carrying the proposed chip so there is something concrete to correct.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The Node view has no visual spec — nodes are specified only as background</h3>
+              <span class="finding-location">DESIGN.md:695–697 · EXPERIENCE.md:245</span>
+            </header>
+            <div class="finding-note"><code>components.node-backdrop</code> specs nodes strictly <em>as ground</em> — "The backdrop is the quietest thing on the map by a wide margin — 1.1:1 band against band. It is a ground, and it must never compete with a zone tint." EXPERIENCE.md:245 says that in tab 2 the nodes are "no longer bands lying under the stacks, but the subject." Nothing anywhere says what a foreground node looks like: <code>shape.bubble.radius</code> carries <code>service</code> / <code>container</code> / <code>volume</code> and no <code>node</code>, though <code>colors.pastille-type-node</code> exists, and EXPERIENCE.md:82 confirms "A node is an object you select in the node view". Flow 3 runs entirely on this surface.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a <code>node-region</code> component, or a declared foreground mode of <code>node-backdrop</code> with its own radius and label treatment.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Hover is unspecified anywhere in the pair, in a mouse-only product</h3>
+              <span class="finding-location">EXPERIENCE.md:146, 164 · DESIGN.md:517, 763</span>
+            </header>
+            <div class="finding-note">EXPERIENCE.md bans keyboard shortcuts outright ("Keyboard shortcuts — none, anywhere") and puts keyboard traversal out of scope, so the product is mouse/trackpad only — which makes hover the sole pre-click affordance. DESIGN.md mentions hover only twice, both times to forbid glass on it.</div>
+            <div class="finding-note"><strong>Converges:</strong> the accessibility auditor lists the same gap under "Holes never decided either way", noting hover "is the only remaining discovery channel once keyboard is out".</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a hover rule to Interaction Primitives, or state that there is deliberately no hover state and why.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title"><code>Image</code> has an EXPERIENCE.md row but no DESIGN.md entry</h3>
+              <span class="finding-location">EXPERIENCE.md:86</span>
+            </header>
+            <div class="finding-note">Defensible — it is a negative-space decision, "never a bubble" — but the pairing is asymmetric, and DESIGN.md's Detail panel says nothing about the image line it is supposed to hold.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one sentence in Detail panel.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 4. STATE COVERAGE ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>4. State coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Walked all five IA surfaces (Overview, Node view, Service view, Detail panel, Left menu) against the state list the product's shape implies. State Patterns carries 14 rows and covers the genuinely hard cases well: cold load, end-of-load resolution gesture, alive-at-rest, layout stability, selection, filter-empties-the-map, stale data, socket-unreachable-on-cold-load, empty cluster, below-minimum-viewport, zone-mode switch, reduced motion. Focus state is covered by explicit exclusion rather than omission (keyboard out of scope, stated plainly at line 164) — defensible.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The Detail panel has no states at all</h3>
+              <span class="finding-location">EXPERIENCE.md §State Patterns</span>
+            </header>
+            <div class="finding-note">No row names it. Missing: its own load treatment; what happens when the selected object disappears on the next 5–10s poll while the panel is open (<code>{motion.exit}</code> at line 108 says the <em>bubble</em> "fades in place" and stops there); and how the panel behaves under staleness, when the map is paling but the panel's text is not. It is one of five IA surfaces and it is where every one of Flow 1's and Flow 3's factual answers arrives.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add rows for load, subject-vanished, and stale.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">View-switch load is undefined</h3>
+              <span class="finding-location">EXPERIENCE.md:42, 104, 244</span>
+            </header>
+            <div class="finding-note">Cold load is scoped to Overview. Switching to Node view or Service view is "a complete change of view, not a filter" — does the layered draw replay, or does the view appear instantly? Flow 3's steps 1–2 read as instant but never say so.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one row settling it.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Service view has no failure state</h3>
+              <span class="finding-location">EXPERIENCE.md:38</span>
+            </header>
+            <div class="finding-note">"There is no empty-subject state to design: the view cannot be reached without a subject" is fair for entry, but nothing covers the subject service disappearing between polls while the user is inside tab 3.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one row.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Node view states exist only inside a flow</h3>
+              <span class="finding-location">EXPERIENCE.md:113, 254</span>
+            </header>
+            <div class="finding-note">"One machine is fresh and carries nothing → its region renders empty" appears only as a Flow 3 failure path, and "Empty cluster" is scoped to Overview. A consumer reading State Patterns for the Node view finds only the generic "every graph surface" rows.</div>
+            <div class="finding-fix"><strong>Fix:</strong> promote the empty-node case into the table.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The Left menu has no states</h3>
+              <span class="finding-location">EXPERIENCE.md §State Patterns</span>
+            </header>
+            <div class="finding-note">Filter counts at zero, counts during cold load, the orphan counter when there are no orphans.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one row, or an explicit line saying chrome carries no states.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 5. VISUAL REFERENCE COVERAGE (thin → open) ===================== -->
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>5. Visual reference coverage</h2>
+          <span class="verdict-pill verdict-thin">thin</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>No <code>mockups/</code>, <code>wireframes/</code> or <code>imports/</code> directories exist. <code>.working/</code> holds seven files: four design directions (<code>direction-1-portulan-ancien</code>, <code>direction-2-instrument-de-precision</code>, <code>direction-3-carte-marine-officielle</code>, <code>direction-4-cartographie-editoriale</code>), <code>zone-overlap-options-2026-09-10.html</code>, <code>shape-study-organic-2026-09-10.html</code>, and <code>ia-portolan-2026-09-10.excalidraw</code>. Exactly <strong>two</strong> are linked inline by path, both from EXPERIENCE.md (lines 46 and 98). Spines-win-on-conflict is stated once, at line 46 — correct placement, correct frequency. DESIGN.md links nothing.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The pair's only drift note is itself stale, and it defames a correct artifact</h3>
+              <span class="finding-location">EXPERIENCE.md:46</span>
+            </header>
+            <div class="finding-note">The note reads: <em>"<strong>Known drift:</strong> that file still draws an <code>Images</code> filter in the left menu and still lists 'are images graph nodes?' as open."</em> The file was read: 79 elements, the left-menu filters are <code>Réseaux / Volumes / Stacks / Conteneurs</code> with no Images filter anywhere, and the <code>À TRANCHER</code> box holds one item only — "lisibilité par défaut avant tout filtre, sur un gros cluster". <code>.memlog.md</code> entry 152 records exactly this regeneration. The note was never removed. A consumer is told to distrust the one artifact that is accurate.</div>
+            <div class="finding-fix"><strong>Fix:</strong> delete the drift note; the file is also now ready for promotion to <code>wireframes/</code>, as the memlog says.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">part resolved since review</span>
+              <h3 class="finding-title">The linked wireframe shows two controls neither spine specifies</h3>
+              <span class="finding-location">.working/ia-portolan-2026-09-10.excalidraw</span>
+            </header>
+            <div class="finding-note">A search field (<code>rechercher un objet…</code>) — the word "search" appears <strong>zero</strong> times in either spine — and an appearance control reading <code>Apparence : couleurs, taille du texte</code>, where both spines list display controls as "zone mode, text size, density, theme" with no colour control. Spines-win silently resolves both in favour of dropping them, which for search may be right and for colours contradicts the brief.</div>
+            <div class="finding-note"><strong>Part resolved since the review:</strong> the colours half is closed — the user ruled predefined iso-luminant palettes as a left-menu display control, so the wireframe's <code>Apparence : couleurs</code> is no longer contradicted. The search field remains unspecified and unacknowledged.</div>
+            <div class="finding-fix"><strong>Fix:</strong> say explicitly that object search is out of v1 (or specify it), and carry the palette control into both spines so the wireframe and the spines agree.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Five of seven working files are orphans or cited only by nickname</h3>
+              <span class="finding-location">DESIGN.md:550, 613, 648, 664, 749, 765</span>
+            </header>
+            <div class="finding-note"><code>shape-study-organic-2026-09-10.html</code> is load-bearing — DESIGN.md attributes the silhouette-vs-deform channel split, the entire protrusion anatomy ("adopted verbatim from the shape study") and the motion specification to it — and is never linked by path. <code>direction-2-instrument-de-precision.html</code> is the chosen direction and the source of the toolbar-chip proposal, cited four times as "the direction file" or "the direction-2 mock", never linked. <code>direction-1</code>, <code>-3</code> and <code>-4</code> are never referenced at all, in either file.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add inline path links at Shapes, at Components → Labelled protrusion, and at Brand &amp; Style; name the three rejected directions once so the record of what was declined survives outside the memlog.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">DESIGN.md carries no visual reference link of any kind</h3>
+              <span class="finding-location">DESIGN.md</span>
+            </header>
+            <div class="finding-note">It never restates spines-win either. Since all four of its citations are unspecific nicknames, a consumer reading DESIGN.md alone has no path to follow.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one link at Brand &amp; Style is enough.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 6. BLOAT & OVERSPECIFICATION ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>6. Bloat &amp; overspecification</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Both files are dense but very little is decorative. EXPERIENCE.md opens by declaring that scope, personas, market and the v1 object list are inherited by reference and not restated (line 13) and then keeps that promise. DESIGN.md's contrast table, the <code>motion.breathe</code> period and delay arrays, and the 21-row Do's and Don'ts table all earn their space — each is directly consumable by a builder. Editorial voice in DESIGN.md prose is licensed and is used well.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">EXPERIENCE.md prose carries decision provenance where a behavioural spec should carry rules</h3>
+              <span class="finding-location">EXPERIENCE.md:74 and five further rows</span>
+            </header>
+            <div class="finding-note">The Bubble row argues from <em>"Jules's founding wording was <code>contours irréguliers (galets, cellules) + corps mous qui se déforment</code>; his later choice of shape treatment C narrowed <em>corps mous</em> to deformation toward links only, explicitly <code>sans l'écrasement</code>, and that narrower reading is the one that binds"</em> — a ratification argument, not a rule. Same pattern in Pastille, Health pastille, Image, Echo bubble and Left menu. DESIGN.md may carry voice; EXPERIENCE.md should not, and a story-dev must now separate rule from justification in six of 23 rows.</div>
+            <div class="finding-fix"><strong>Fix:</strong> the provenance already lives in <code>.memlog.md</code> — keep the ruling in the spine and let the memlog hold the argument.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">DESIGN.md declares a spacing scale that no component consumes</h3>
+              <span class="finding-location">DESIGN.md frontmatter → spacing</span>
+            </header>
+            <div class="finding-note"><code>spacing.1</code>–<code>spacing.8</code>, <code>panel-pad</code> and <code>bezel</code> are never referenced by any component entry or by prose; every component sizes itself in raw pixels instead — <code>plate-height: '17.5px'</code>, <code>checkbox: '11 × 11px'</code>, <code>pastille size: '10 × 10px'</code>, <code>stalk: '1px'</code>, bubble radii <code>54 / 46 / 32px</code>, "minor ticks every 10px, major every 50px", "crosses at 30/30", "5.5px gap", "0.87r", "14px". Either the scale governs the components or it is decoration.</div>
+            <div class="finding-fix"><strong>Fix:</strong> reference the scale where it applies, and mark the genuinely off-scale values (17.5, 5.5, 11) as deliberate exceptions.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">DESIGN.md's Open Questions row duplicates EXPERIENCE.md's row 1 nearly verbatim</h3>
+              <span class="finding-location">DESIGN.md:788 / EXPERIENCE.md:267</span>
+            </header>
+            <div class="finding-note">One owner is enough for a question that belongs to neither file.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep it in EXPERIENCE.md, cross-reference from DESIGN.md.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">"the brief's top external success signal" is restated five times across the pair</h3>
+              <span class="finding-location">DESIGN.md:509, 556, 587, 743; EXPERIENCE.md:24</span>
+            </header>
+            <div class="finding-note">It is load-bearing once.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state it in Brand &amp; Style and reference it thereafter.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 7. INHERITANCE DISCIPLINE ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>7. Inheritance discipline</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Mechanically clean. Both <code>sources:</code> lists resolve. The Docker glossary (node, network, volume, stack, service, container, image) is identical across both spines and the brief, and EXPERIENCE.md makes preserving it a hard rule (line 55). The invented chassis vocabulary (<em>surveyed</em>, <em>off-chart</em>, <em>reorganise</em>, <em>fit to chart</em>) is used consistently in both files. Component names are identical across all four lists. All 30 distinct EXPERIENCE.md token references resolve to DESIGN.md tokens by name. Four <code>[DEPARTS FROM BRIEF]</code> markers, each carried in both files where both are affected — the health-pastille departure in particular is marked three times and its cost restated each time.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">One departure from the brief is unmarked and silent — user-adjustable colours</h3>
+              <span class="finding-location">brief.md §Scope · EXPERIENCE.md:40, 89, 159 · DESIGN.md §Colors, §Typography</span>
+            </header>
+            <div class="finding-note">The brief lists user-adjustable presentation as <em>"filtering and display control (what is shown, <strong>colours</strong>, text size)"</em>, and <code>.memlog.md</code> entry 17 records it as a stated requirement. Neither spine offers a colour control: display controls are "zone rendering mode, text size, density, theme", and the Accessibility Floor cites the brief's requirement by name while listing only text size and density. Both spines keep two-thirds of that sentence and cite it — "<strong>Adjustable text size … are first-class controls in the left menu … the brief makes user-adjustable presentation a requirement</strong>" — while the colours half is nowhere. Worse than an omission, the palette is <strong>structurally foreclosed</strong>: zone hues are "a six-step rotation assigned in <strong>creation order</strong> and then <strong>held for the life of the network</strong>", and "Everything that is neither metal nor ink is graphite." Selectively quoting the same sentence for the surviving half is what makes it a silent contradiction rather than a gap. It also removes the user's own escape hatch from the seventh-network tint repeat.</div>
+            <div class="finding-note"><strong>Converges:</strong> found independently by the rubric walker (§7) and the brief-fidelity reviewer (S2), which rated it high on downstream impact.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled <em>predefined iso-luminant palettes</em> — the user picks between colour sets shipped with the product, each verified to hold the contrast floors, honouring the brief's display-control intent without letting the user break the guarantee that every edge stays legible over every zone tint.</div>
+            <div class="finding-fix"><strong>Fix:</strong> carry the palette control into both spines' left-menu inventories and the Accessibility Floor, and state in DESIGN.md §Colors why the set is bounded — a user-editable palette would destroy the iso-luminant guarantee the ≥3:1 edge floor depends on.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">"Open in both files, and the two agree it is open" is true in spirit and false against the tables</h3>
+              <span class="finding-location">EXPERIENCE.md:268 vs DESIGN.md:749, 788</span>
+            </header>
+            <div class="finding-note">DESIGN.md marks the on-screen-control appearance <code>[ASSUMPTION]</code> inline but does <strong>not</strong> list it in its own Open Questions table, which carries exactly one row.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add the row to DESIGN.md's Open Questions.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 8. SHAPE FIT ===================== -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>8. Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>DESIGN.md holds the canonical order exactly, with nothing omitted and nothing out of place: Brand &amp; Style → Colors → Typography → Layout &amp; Spacing → Elevation &amp; Depth → Shapes → Components → Do's and Don'ts, plus a trailing invented Open Questions. Frontmatter uses the five canonical spec keys as specified and declares seven extension namespaces with an explicit, well-argued rationale (line 486) — each is genuinely load-bearing in a graph that breathes, deforms, dims and refuses to render below 1440px, and each is named exactly as EXPERIENCE.md already references it, so nothing had to be renamed to make the pair resolve. That is the right way to extend the spec.</p>
+            <p>EXPERIENCE.md carries all eight required defaults — Foundation, Information Architecture, Voice and Tone, Component Patterns, State Patterns, Interaction Primitives, Accessibility Floor, Key Flows — plus both required-when-applicable sections, correctly triggered: Responsive &amp; Platform (a viewport floor exists) and Inspiration &amp; Anti-patterns (the memlog records six named rejects and four named learn-froms). No default is dropped, so nothing needs defending. The two invented DESIGN.md subsections ("Contrast, the load-bearing combinations"; "Two channels, and only one of them is data") both carry decisions nothing else in the pair carries.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">DESIGN.md introduces a toolbar that EXPERIENCE.md's IA does not own</h3>
+              <span class="finding-location">DESIGN.md:579, 749 vs EXPERIENCE.md:42</span>
+            </header>
+            <div class="finding-note"><code>spacing.toolbar: 40px</code> is declared; "Vertically inside the canvas column: <code>{spacing.toolbar}</code> 40px, the map, then the chart legend band"; and three on-screen controls sit "in the 40px toolbar above the map". EXPERIENCE.md's chrome inventory reads "<strong>left menu</strong> for filters and display, <strong>bottom tabs</strong> for views, a permanent <strong>chart legend</strong> band beneath the canvas, graph canvas everything else" — no toolbar. The linked wireframe shows no toolbar either. This is the same class of drift the session already caught and fixed for the chart-legend band (<code>.memlog.md</code> entry 160); the toolbar was missed.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add the toolbar to EXPERIENCE.md's chrome inventory and IA table, or move the three controls into a surface that already exists.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== REVIEWER: LEGIBILITY AT SCALE ===================== -->
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Legibility at scale — adversarial, one constructed cluster</h2>
+          <span class="reviewer-source">review-legibility-at-scale.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>It survives as a picture. It does not survive as a map of <em>networks</em>, which is the product's primary axis.</strong> The structural bet is right and the arithmetic confirms it: rendering networks as areas rather than edges converts ~660 of ~700 edges into local stubs, leaving ~40 long edges and roughly five expected crossings. Portolan does not hairball. Weave Scope's grave is genuinely avoided.</p>
+            <p>But the network channel is carried at rung 0 by three mechanisms, and on this cluster <strong>all three fail simultaneously</strong>: the tint field is mud (the design's own zone study says six fields turn the canvas to mud; this cluster has eleven), the attachment stub is a sub-pixel smudge, and the network pastille — the file's stated rescue for both — is switched off at rung 0 by the LOD ladder <em>and</em> runs the same six-hue rotation it is supposed to rescue. The frame the product is judged on is the one frame where the answer to "which container is on which network" is unavailable through any channel. That is not degradation; that is the brief's founding question going unanswered in the default view.</p>
+            <p>Everything else on the list — body size, type floor, pastille density, stretch reservation, motion — degrades, some of it badly, but degrades. The network channel breaks.</p>
+            <p><span class="reviewer-source">Test cluster: 6 nodes · 14 stacks · 40 services · 300 containers · 11 overlay networks · 25 volumes, on 1440×900, dark mode, Overview tab, rung 0 after <em>Fit to chart</em>, no filter, zone mode A. Real body diameter computes to 14–28px, most plausibly ~19px — a 48px-radius body is off by a factor of five. ≈3,200 discrete marks on screen, one per 16 × 16px square.</span></p>
+            <p><span class="reviewer-source">Consolidation note: this reviewer's "9px type floor" finding is merged with the accessibility auditor's identical finding and appears once below; its drift-vs-clearance finding is merged into the accessibility section's motion-drift finding.</span></p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">The stated rescue for the repeating zone rotation is the same repeating rotation</h3>
+              <span class="finding-location">DESIGN.md §Colors, §Do's and Don'ts · EXPERIENCE.md §Network zone</span>
+            </header>
+            <div class="finding-note">DESIGN.md §Colors ("the answer to <em>which network is this</em> is then the network pastille") and §Do's and Don'ts ("its blur is covered by the network pastille, by design") both lean on the network hexagon — but <code>pastille-network-1…6</code> is itself a six-step rotation, so networks 7–11 collide on the badge exactly as on the field. <em>Breaks at:</em> 7 networks — the first repeat. The accessibility auditor reached the same conclusion from colour distance: "Network 7's hexagon = network 1's hexagon. The stated remedy for the repeat is the thing that repeats" — and adds that the hexagon family is itself CVD-confusable (ΔE <strong>2.6</strong> deuteranopia, <code>n1</code>≈<code>n3</code>).</div>
+            <div class="finding-note"><strong>Converges:</strong> two independent lenses — packing arithmetic on an 11-network cluster, and CIELAB dichromat simulation — landed on the same sentence. <code>.memlog.md</code> records it as a facilitator error: the user chose "the hue rotation repeats, the network pastille settles it" on a premise he was given wrongly.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled a <em>hue + pattern octave</em> — hue cycles over six, a fill pattern (solid, half, ring, dotted…) marks the octave, so network 7 is hue 1 with the second pattern. Applied to both the zone field and the network pastille. Infinitely extensible, keeps shape=family intact. Stated cost: a pattern inside a 6px badge is hard and needs proving.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep six hues and add an orthogonal, shape-preserving state to the hexagon — hollow / filled / double-ring, or a 1–2 glyph mono index inside it. Three states × six hues = 18 networks, <code>shape = family</code> intact, no seventh hue, no decision reopened.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">At LOD rung 0 the network pastille does not render, so mode A's known blur has no fallback in the landing and export frame</h3>
+              <span class="finding-location">EXPERIENCE.md §Interaction Primitives (LOD ladder) · DESIGN.md §Colors</span>
+            </header>
+            <div class="finding-note">EXPERIENCE.md's ladder puts network pastilles at rung 1; DESIGN.md's coverage argument assumes they are present. The one frame the product is judged on is the one frame with no exact answer to "is this container on that network" — the brief's founding question. <em>Breaks at:</em> any cluster where zones overlap, i.e. ~4+ networks.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> closed as a side effect of the hue + pattern octave ruling — because the pattern rides on the <em>zone</em> as well as the badge, networks are distinguishable at rung 0 where the pastille does not yet render, so the landing and exported frames regain an exact network answer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> promote the network pastille to rung 0 in place of, or alongside, the type pastille — type is recoverable from body size and position, network is not recoverable from anything. This trades one rung-0 family for another and reopens the <em>ordering</em> of the ladder, not the ladder itself.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">The node backdrop and the network zones compete for the same positional channel, and on a real swarm the zones lose</h3>
+              <span class="finding-location">DESIGN.md §Node backdrop · EXPERIENCE.md §IA</span>
+            </header>
+            <div class="finding-note">An overlay network spans every node by construction — that is what an overlay network is. If a container must sit in its node's band for the backdrop to be truthful, then every zone is a 6-lobed smear across the full canvas width, all eleven fields overlap nearly everywhere, and mode A resolves to a uniform wash. The design's own zone study predicted this at six fields: <em>"six turn the canvas to mud."</em> <em>Breaks at:</em> ~4 nodes × ~6 networks — well below the test cluster.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled the node backdrop <em>off by default</em>, as a display control in the left menu — exactly the weaker decision-preserving variant this reviewer named. The overview lands purely relational and the network zones get the whole positional channel back; the landing-surface merge is preserved on demand and no prior decision is reopened.</div>
+            <div class="finding-fix"><strong>Fix:</strong> drop the node backdrop from the Overview and let it live where it already has a journey — tab 2, which Flow 3 uses for exactly the distribution read. A weaker variant that reopens nothing: make the backdrop a display control, off by default.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The ≥3:1 edge floor is measured against one tint; mode A composites several</h3>
+              <span class="finding-location">DESIGN.md §Contrast table + §Network zone</span>
+            </header>
+            <div class="finding-note">The zone isoline drops to <strong>2.79:1</strong> at two overlapping fields and the attachment edge to <strong>2.87:1</strong> at four. With 300 containers at 2.2 networks each, ~7 shared containers per network pair — every pair of networks shares members, so in mode A every zone overlaps every other zone, and the modal region is under three to five fields. The iso-luminant rotation makes the floor checkable per tint and the geometry then defeats it. <strong>Both branches lose:</strong> translucent fields destroy the contrast floor and the hue; near-opaque fields (as the direction and study mocks draw them at 0.92–0.95) mean the top field paints over the others and overlap carries no information at all. <em>Breaks at:</em> 2 overlapping fields for the isoline, 4 for the attachment edge.</div>
+            <div class="finding-fix"><strong>Fix:</strong> cap composited tint depth — after N fields the renderer stops adding luminance — and re-measure the floor against the capped maximum rather than against a single tint. The cap is a rendering rule, not a design decision.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title"><code>{elevation.bubble}</code> is specified for a 96px body and is catastrophic at a 28px one</h3>
+              <span class="finding-location">DESIGN.md frontmatter → elevation.bubble</span>
+            </header>
+            <div class="finding-note"><code>feDropShadow dy 5 · stdDeviation 7</code> extends ~21px (3σ) beyond the silhouette — 1.5× the whole body diameter at map scale, against 8px of clearance. All 325 shadows land on their neighbours, the map fogs, and the 3.3:1 contour-over-canvas figure is measured against a ground that no longer exists. It also carries a frame-rate cost: SVG filters are not compositor-accelerated in any of the three named engines, and <code>{motion.breathe}</code> changes the path bbox every frame by construction — order <strong>5M pixel-operations per frame for shadows alone</strong>, ~300M/s at 60fps. <em>Breaks at:</em> the moment bodies fall below ~40px diameter, i.e. ~120 objects on this viewport.</div>
+            <div class="finding-fix"><strong>Fix:</strong> bind <code>{elevation.bubble}</code> to the LOD rung — the file already has <code>dark-small</code> for volumes and echoes; make rung 0 use it or none, and reserve the full drop for rungs 2–3. Note that <strong>light mode has no shadow at all and is therefore the palette that survives this test</strong> — which is already the specified screenshot palette.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title"><code>{shape.pastille.size}</code> does not say whether it scales, and both readings kill the rung-0 encoding</h3>
+              <span class="finding-location">DESIGN.md §Shapes → shape.pastille</span>
+            </header>
+            <div class="finding-note">Fixed at 10px it is wider than the core is tall (9.4px) and is 53% of the body's diameter — 325 badges dominate the silhouette, and the silhouette's stretch direction is supposed to be the rung-0 data channel. Scaled with the body (20%) it is <strong>2 × 2px</strong>, and five type values separated by fill colour alone at ~7 arcmin is below the small-field colour-naming threshold for most observers; small-field tritanopia is normal vision, not a deficiency. The contrast table's 5.0–17.0:1 is a luminance figure and does not rescue hue identification at that size. <em>Breaks at:</em> ~150 objects on this viewport.</div>
+            <div class="finding-fix"><strong>Fix:</strong> specify a pastille floor in the same sentence as the type floor — the badge never renders below 6px and never exceeds 40% of core width; between those it scales. Where it cannot meet the floor, drop the family, exactly as the type ladder already does for labels.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The 9px type floor is violated by the ramp that declares it</h3>
+              <span class="finding-location">DESIGN.md §Typography · frontmatter typography.*</span>
+            </header>
+            <div class="finding-note">"the absolute floor after multiplication is 9px — no glyph in Portolan is ever rendered smaller, at any scale, at any zoom" is contradicted by the same file's ramp: <strong>four of eleven roles are under 9px at scale 1.00</strong> (zone-sub 8.5, section-label 8.0, marginalia 8.5, graduation 8.0) and six at 0.90 (adding bubble-id 8.10, zone-label 8.55, down to 7.2px). The floor is satisfied only at 1.15. Three of the four default-scale violations are on the exported chart. Typography also praises "a 8px label" a few paragraphs earlier. <em>Breaks at:</em> every cluster, including the three-container lab.</div>
+            <div class="finding-note"><strong>Converges:</strong> found independently by the legibility reviewer (from the ramp arithmetic) and the accessibility auditor (from the floor claim), with identical role lists and figures.</div>
+            <div class="finding-fix"><strong>Fix:</strong> raise the four roles to 9px, or restate the floor as what it evidently is — "9px for map labels; chart marginalia and section heads run to 7.2px" — and accept that graduation and zone-sub then need their own exemption written down. Either is a one-line edit; the current text is simply not true of its own table.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The far endpoint of 660 of ~700 edges is undefined</h3>
+              <span class="finding-location">DESIGN.md §components.edge, §components.network-zone</span>
+            </header>
+            <div class="finding-note"><code>{components.edge}</code> specifies "attachment (an object to a network)" while <code>{components.network-zone}</code> gives the network no position. Both working artifacts resolve it as a short coloured protrusion stub; neither spine says so, and at rung 0 that stub is <strong>~2px</strong> — shorter than one period of its own <code>2 4</code> dasharray. <em>"Nothing in any rendering choice is permitted to dissolve an edge"</em> is a rule this design breaks against its own most numerous edge type, in its own default frame. <em>Breaks at:</em> rung 0, at every scale.</div>
+            <div class="finding-fix"><strong>Fix:</strong> name the stub in <code>{components.edge}</code> as the attachment's rendering, and give it a rung-0 minimum length so it stays a visible mark. It is the cheapest available way to put <em>some</em> network signal back into the default frame.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The stretch reservation costs 24% of body radius at the exact point where radius is the binding constraint</h3>
+              <span class="finding-location">DESIGN.md §shape.bubble.deform.reservation + spacing.cell-clearance</span>
+            </header>
+            <div class="finding-note">r falls from 18.3px to 13.9px on the landing frame at 325 objects, and the bulge it buys is <strong>4.4px</strong> with cos² falloff over ±38° on a 28px body — smaller than the drop shadow's blur radius. The data channel pays a quarter of the body's size and is then buried under the body's own shadow. <em>Breaks at:</em> ~250 objects.</div>
+            <div class="finding-fix"><strong>Fix:</strong> scale the deform cap with the rung — +32% at rungs 2–3 where the silhouette is legible, +12% at rung 0 where only gross elongation survives anyway (the shape study's own finding). The channel is preserved and a third of the reservation is returned to body size.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The chart legend cannot decode the chart it ships inside</h3>
+              <span class="finding-location">DESIGN.md §components.chart-legend</span>
+            </header>
+            <div class="finding-note">Six columns across a 1204px canvas = <strong>201px each</strong> (147px with the panel open). Column 6 decodes the zone colours and has <strong>six swatches; the map has eleven zones</strong> — the exported chart carries a key that provably cannot decode its own picture. Column 5 sets <code>pgdata · pg-data · pg_data · pgdatal</code> at <code>{typography.plate}</code> 10px / 0.04em = <strong>230px wide</strong> in a 201px column; it wraps, and wrapping destroys the adjacency that is the entire point of the specimen. <em>Breaks at:</em> 7 networks for the swatches; immediately for the specimen.</div>
+            <div class="finding-note"><strong>Note:</strong> the hue + pattern octave ruling changes what this column must carry — swatches now need hue <em>and</em> pattern — but does not close the arithmetic: six swatches still cannot decode eleven zones, and the specimen still overflows.</div>
+            <div class="finding-fix"><strong>Fix:</strong> make the zone column list the networks actually present rather than the palette (scroll or truncate with a count), and set column 5's four strings stacked vertically on a shared left margin — which is not a compromise but an improvement, since it mirrors the shared-baseline mechanism the protrusions use.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Flow 1's orphan climax cannot happen on this cluster</h3>
+              <span class="finding-location">EXPERIENCE.md §Key Flows → Flow 1</span>
+            </header>
+            <div class="finding-note"><em>"One bubble floats between the zones, attached to nothing"</em> requires there to be a "between." With eleven fields covering the canvas there is none, and the orphan is a 19px pebble among 325 with no badge, no ring and no colour by explicit decision. <em>Breaks at:</em> ~6 networks / ~150 objects.</div>
+            <div class="finding-fix"><strong>Fix:</strong> none needed to the drawing — the orphan counter in the left menu already is the mechanism, and it was designed for exactly this. Retire the claim that isolation alone carries it at rung 0, and say in the flow that the counter is how it is found on a real cluster. The decision (no badge, no judgement) survives untouched.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The reachability hop limit has no default, and every default but "1 hop" is dead on arrival</h3>
+              <span class="finding-location">EXPERIENCE.md §Interaction Primitives</span>
+            </header>
+            <div class="finding-note">With 300 containers sharing 11 networks, the transitive closure from any container is the whole cluster. At 1 hop it lights ~4 of 325 objects; at 2 hops, 150+. <code>.memlog.md</code> entry 142 leaves the default unset. <em>Breaks at:</em> any cluster with a shared ingress network.</div>
+            <div class="finding-note"><strong>Note:</strong> now load-bearing for a second reason — the "Keep only this" relational filter ruled since the review reuses this same hop reach.</div>
+            <div class="finding-fix"><strong>Fix:</strong> set the default to 1 hop.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The invariant core is geometrically degenerate at map scale</h3>
+              <span class="finding-location">DESIGN.md §shape.bubble.core</span>
+            </header>
+            <div class="finding-note">0.59w × 0.50h at r = 9.4 gives 11.1 × 9.4px with a <code>{rounded.lg}</code> 6px corner radius — that is a stadium, not a rectangle, and it holds nothing at rung 0.</div>
+            <div class="finding-fix"><strong>Fix:</strong> stop drawing the core below the rung where it carries content; it is a layout invariant, not a mark.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title"><code>{stroke.contour-inner}</code> at 0.87r is 1.2–1.8px inside the outer contour at map scale</h3>
+              <span class="finding-location">DESIGN.md §stroke.contour-inner</span>
+            </header>
+            <div class="finding-note">Two hairlines that close together are a moiré, not "the instrument's second ring."</div>
+            <div class="finding-fix"><strong>Fix:</strong> bind it to a rung, same as the shadow.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Working-artifact drift: the zone study draws a container-to-container edge type that does not exist</h3>
+              <span class="finding-location">.working/zone-overlap-options-2026-09-10.html</span>
+            </header>
+            <div class="finding-note">It draws <em>"4 container-to-container links"</em> as real edges. Neither spine defines a container-to-container edge type — <code>{components.edge}</code> names exactly two. If that type ever entered the model it would be catastrophic: containers on a shared network form a clique, so a 40-container network alone is 780 edges.</div>
+            <div class="finding-fix"><strong>Fix:</strong> note in the study that c2c links are not a Portolan edge type, before someone builds from the picture.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== REVIEWER: BRIEF FIDELITY ===================== -->
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Brief fidelity — spines against brief.md and addendum.md</h2>
+          <span class="reviewer-source">review-brief-fidelity.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The declared departures are handled unusually well: all four brief-facing <code>override</code> entries in the memlog are marked <code>[DEPARTS FROM BRIEF]</code> in <code>EXPERIENCE.md</code>, each names the brief sentence it breaks, and each states its cost — these are real justifications, not decoration. The failures are elsewhere. <strong>Three silent contradictions remain</strong>, the worst of which prints a security guarantee into the permanent chrome that the brief expressly reserves for the architecture work — and which is, as written, false. A second silently deletes a v1 scope item (user-adjustable colours) while citing the same brief sentence as authority for the item it kept. A third has the product's own microcopy deny the health departure that the same file declares fifty-five lines earlier.</p>
+            <p>Separately, the governing principle of <em>both</em> spines rests on an asserted self-contradiction inside the brief that the brief does not contain. That is the single highest-leverage reverse-direction finding: it is the licence under which graphic density was admitted, and it was never the brief's.</p>
+            <p>Severity below = downstream impact, i.e. what an implementer or a PRD author would build wrong from these documents alone.</p>
+            <p><span class="reviewer-source">Consolidation note: this reviewer's S2 (user-adjustable colours) is merged with the rubric's Inheritance discipline finding and appears once, in §7. Its two "Low–Med" findings (M2, M3) are normalised upward to medium here.</span></p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">S1 — The chrome ships a security guarantee the brief reserves for architecture, and the guarantee is false</h3>
+              <span class="finding-location">DESIGN.md:725 §Left menu</span>
+            </header>
+            <div class="finding-note">A permanent marginalia block sits at the foot: <em>READ ONLY · SOCKET MOUNTED :RO · NO WRITE POSSIBLE</em>. Three separate problems, compounding. <strong>(1) It decides an architecture question the brief explicitly left open.</strong> The brief says the mediation question <em>determines</em> whether read-only is enforced — "Read-only at the product level is a promise, not a mechanism" — and DESIGN.md answers it in a chrome string, in a UX document, with no marker, no rationale, no acknowledgement that a decision was taken. <strong>(2) It is technically wrong.</strong> <code>:ro</code> on a <code>/var/run/docker.sock</code> bind mount makes the <em>socket inode</em> read-only; it does not restrict the Docker API reachable through it. A process with that mount can still <code>POST /containers/create</code>. The string asserts "NO WRITE POSSIBLE" for a configuration under which writes are entirely possible. <strong>(3) It is the highest-trust surface in the product</strong> — permanent, in the left menu of every screen, and inside the exported frame the flows are built to have strangers post. The brief's own worry is that the tool must not be the odd thing; this ships a false assurance about exactly that.</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled the chrome string removed.</div>
+            <div class="finding-fix"><strong>Fix:</strong> delete the mechanism claim from the chrome, or reduce it to what the product actually knows (<code>READ ONLY</code> as a product posture). If a mechanism claim is wanted, mark it <code>[DEPARTS FROM BRIEF]</code>, say that it pre-empts addendum open question 1, and make it true — a read-verb-restricted socket proxy is the only configuration under which "no write possible" is a fact.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">part resolved since review</span>
+              <h3 class="finding-title">S3 — The product's permanent footer denies the health departure the same file declares</h3>
+              <span class="finding-location">DESIGN.md §Detail panel vs §Health pastille</span>
+            </header>
+            <div class="finding-note">§Detail panel, permanently: <em>Portolan renders the observed state. No threshold, no rule, no verdict.</em> §Health pastille, fifty-five lines earlier: <strong>[DEPARTS FROM BRIEF]</strong> … <strong>this renders a verdict</strong>, and the brief says Portolan does not. Both cannot be true. And the footer is wrong on all three of its own terms: <strong>verdict</strong> — the departure is declared precisely as a verdict; <strong>threshold</strong> — <code>degraded</code> (<code>#C08A3C</code>) is not an observed state Docker hands over, it is a classification produced by comparing running replicas to desired; <strong>rule</strong> — the mapping <em>(replicas, task state) → nominal | degraded | stopped</em> is a rule, and <strong>it is specified nowhere in either spine</strong>. The declared departure understates its own scope: it is presented as a colour choice ("a traffic light") when it is in fact the introduction of the product's only classification rule.</div>
+            <div class="finding-note"><strong>Part resolved since the review:</strong> the user defined amber as <code>running &lt; desired</code> replicas. Docker reports both numbers, so "3/5" is a raw fact rather than a threshold Portolan invented — this removes the unspecified-threshold problem entirely and narrows the departure to the green/amber/red framing alone. The footer wording still denies the departure and still needs rewriting.</div>
+            <div class="finding-fix"><strong>Fix:</strong> rewrite the footer so it survives the departure (e.g. <em>"Portolan renders the observed state. The health light is the one exception, and it is not an alert."</em>), and write the now-defined three-state rule into <code>EXPERIENCE.md</code> where the departure is declared.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">D1 — Authentication and exposure: absent from both spines</h3>
+              <span class="finding-location">absent from both spines</span>
+            </header>
+            <div class="finding-note">The brief ranks this <strong>first</strong> among the questions carried to architecture: <em>"Who can open the map, and is it reachable from outside the cluster? A read-only tool that exposes every IP, network and volume in an infrastructure is a <strong>reconnaissance gift if left open</strong>."</em> Neither spine contains the words auth, login, session, credential, exposure, or reconnaissance. There is no auth state in §State Patterns, which is otherwise exhaustive, and no auth surface in the IA, which claims completeness. Two things aggravate the silence: <strong>export was promoted to v1</strong> specifically to make the topology portable and postable, and <strong>Flow 2's climax is publishing it</strong> — Tom "exports PNG at that framing. He posts it." IPs and CIDRs are named as rendered content, and no redaction, sanitising or "safe to share" affordance exists. The spine then asserts closure over the gap: "Every blocker, every undecided state and every gap found while writing this spine has since been closed."</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled no auth in v1 — <em>"On va garder l'auth pour une prochaine version, pour le moment on arrive directement sur l'app."</em> No login screen; opening Portolan lands straight on the map. This is a v1 scope decision, so the spines must state it plainly rather than staying mute, and must note that Flow 2 ends with the protagonist publicly posting a full topology, which makes exposure a live concern even without an auth surface.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state the no-auth-in-v1 decision plainly in §Foundation, and add one line in <em>Export</em> about what the frame contains.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <span class="badge" style="background: rgba(22,163,74,0.14); color: var(--verdict-strong)">resolved since review</span>
+              <h3 class="finding-title">R1 — "a contradiction inside the brief itself" — the brief contains none</h3>
+              <span class="finding-location">EXPERIENCE.md:30 §Foundation · DESIGN.md §Brand &amp; Style</span>
+            </header>
+            <div class="finding-note"><em>"This principle arbitrates a contradiction inside the brief itself: its headline bar is <strong>legible over impressive</strong>, yet its top external success signal depends on someone screenshotting <em>because</em> it is impressive."</em> The brief contains no such contradiction. Its signal reads, in full: "A stranger posts a screenshot of <strong>their own</strong> cluster in Portolan." The emphasis in the brief is on <em>their own</em> — the signal is that a stranger reached for the tool on infrastructure the author does not control, which is a <em>use</em> signal. Nothing in the brief attributes the posting to impressiveness; the brief's stated bar for the same picture is "a non-specialist could follow it". This matters more than a citation error, because the invented contradiction is what licenses the reinterpretation, and the reinterpretation is <strong>the governing principle of both spines</strong> — <code>DESIGN.md</code> calls <code>beaucoup à regarder, peu à lire</code> "the most important line in this file".</div>
+            <div class="finding-note"><strong>Resolved since the review:</strong> the user ruled the attribution corrected — the tension is real but its source is Jules's own journey 2 (<em>"presque trop pour que ce soit facilement lisible mais tellement classe"</em>), not the brief. The principle stands; the derivation is re-sourced without weakening it.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state it as what it is — a session decision that graphic richness is compatible with the brief's bar, taken to serve journey 2, with the brief's ordering left intact.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">D2 — The export departure is unmarked in DESIGN.md, which derives four requirements from it</h3>
+              <span class="finding-location">DESIGN.md §Typography, §Chart legend, §Layout, §Do's and Don'ts</span>
+            </header>
+            <div class="finding-note">Fonts embedded in the image, light palette made first-class, the chart legend declared "in the export. It is part of the chart", the graduated bezel and corner crosses declared uncroppable. Four visual requirements rest on a v1 scope reversal that <code>DESIGN.md</code> never flags; a reader of <code>DESIGN.md</code> alone cannot tell a departure was taken. The justification also cites a signal the brief satisfies without it: the brief says "SVG/PNG export — wanted later, <strong>screenshot accepted for now</strong>", and already routed the stranger-posts signal through the screenshot. The departure's real argument is a different and better one — that a screenshot cannot carry the chart legend, the bezel, or a chosen framing — and it is not the one made.</div>
+            <div class="finding-fix"><strong>Fix:</strong> mark the departure in <code>DESIGN.md</code> where its four requirements are derived, and swap in the stronger argument.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">D3 — "Is a stack a bubble?" was never decided; three inconsistent traces</h3>
+              <span class="finding-location">DESIGN.md §Pastille · EXPERIENCE.md §IA, LOD rung 0</span>
+            </header>
+            <div class="finding-note">The brief makes the per-type rendering call an explicit open decision. The spines close it superbly for images and implicitly for nodes. <strong>Stacks are left in three inconsistent states:</strong> <code>DESIGN.md</code> §Pastille lists <code>stack</code> <code>#8F7FB8</code> as an object-type <em>value</em>, which implies a stack can be a bubble carrying a type pastille; <code>EXPERIENCE.md</code> §IA says the overview foregrounds "stacks, volumes and network zones"; LOD rung 0 renders "stack names" as large labels; and there is no <em>Stack</em> row in either spine's component tables. Zones are networks, so a stack is not a zone. Whether a stack is a bubble, a label, or a grouping is unanswerable from these documents — and the layout engine and graph model are specified differently depending on which reading an implementer picks.</div>
+            <div class="finding-fix"><strong>Fix:</strong> decide it, and add the row.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">D4 — The configurable refresh interval has no control on any surface</h3>
+              <span class="finding-location">EXPERIENCE.md §Foundation vs §Component Patterns → Left menu</span>
+            </header>
+            <div class="finding-note">Brief, §Scope, In v1: "auto-refresh every 5–10s, <strong>configurable</strong>". §Foundation restates it as inherited and then no surface offers it. The left menu is fully enumerated in both spines and the interval is not in it; nor is it in the toolbar, the tab bar, or a settings surface (there is no settings surface). Configurability that exists only in a config file is a decision — it may well be the right one — but it is not recorded as one.</div>
+            <div class="finding-fix"><strong>Fix:</strong> record it as a decision, or add the control.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M4 — The orphan counter's justification defends the wrong thing</h3>
+              <span class="finding-location">DESIGN.md §Orphan counter</span>
+            </header>
+            <div class="finding-note">"A finding aid, not an annotation: it does not modify the orphan bubble's drawing in any way, so the tool still never marks an orphan as abnormal." The argument is about the <em>map</em>; the counter is chrome, and chrome is where a verdict would live. It is the only anomaly class in the product with a dedicated chrome row, and "objects with no stack" is a factual predicate the session itself calls the orphan discovery. The counter is defensible — an unread orphan is the brief's own legibility failure — but the justification as written does not reach the object it needs to defend. It is also the seam along which an audit engine grows: the second such row is a findings list.</div>
+            <div class="finding-fix"><strong>Fix:</strong> defend the chrome, not the drawing, and say where the seam stops.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">R2 — "presque trop pour que ce soit facilement lisible" is adopted as the default screen's target without a departure marker</h3>
+              <span class="finding-location">EXPERIENCE.md §Key Flows → Flow 2 climax</span>
+            </header>
+            <div class="finding-note">The quote is correctly attributed to Jules and immediately reconciled — "the richness is graphic, not textual, which is exactly how the same frame stays legible for Rémi" — and presented as compatible with the brief. A stated intent that the default screen be <em>almost too much to read easily</em> is in direct tension with a bar that reads "legible over impressive", and the reconciliation is an argument, not an observation. It should carry the departure marker or an explicit note that the brief's ordering was tested and held; it carries neither.</div>
+            <div class="finding-fix"><strong>Fix:</strong> mark it, or note explicitly that the ordering was tested and held.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">R3 — Screenshot-worthiness is presented as inherited from the brief</h3>
+              <span class="finding-location">.memlog.md 23 · both spines</span>
+            </header>
+            <div class="finding-note">The brief says two things, neither of which is that: export is <strong>out of v1</strong> with "screenshot accepted for now", and a stranger's screenshot is a <strong>success signal</strong> — an outcome measure. Turning an outcome measure into a design requirement is a legitimate move; presenting it as inherited is not. It now underwrites export-in-v1, embedded fonts, light-palette parity, legend-in-export and bezel-in-export. Four of those five are good decisions on their own merits; all five are attributed to the brief.</div>
+            <div class="finding-fix"><strong>Fix:</strong> re-source the requirement to the session.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M2 — The reachability dim removes legibility outside the zoom/filter dichotomy, and the hop limit sits outside the declared control taxonomy</h3>
+              <span class="finding-location">EXPERIENCE.md §Interaction Primitives, §Component Patterns → Left menu</span>
+            </header>
+            <div class="finding-note">The reachability highlight dims the unselected set to 0.18, "which puts dimmed text at 1.5:1 effective. That is the intent: <strong>present, never readable, never removed</strong>." A click therefore removes legibility outside the zoom/filter dichotomy the brief set up. Both spines distinguish dimming from filtering <em>internally</em> — and keep the two dim levels visibly different, which is good — but never reconcile the third instrument with the brief's rule. Also: the <strong>adjustable hop limit</strong> is placed in the left menu, which <code>EXPERIENCE.md</code> declares to contain exactly "two kinds of control, and the difference is load-bearing" — the hop limit is neither a filter nor a display control.</div>
+            <div class="finding-note"><strong>Note:</strong> the "Keep only this" ruling adds a fourth instrument on the same seam — it promotes the dim into a real removal — so the taxonomy sentence now needs revisiting either way.</div>
+            <div class="finding-fix"><strong>Fix:</strong> reconcile the third (now fourth) instrument with the brief's rule, and widen or re-word the two-kinds-of-control claim.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M3 — Mode B fragments the edge set in a product whose brief says the edges are the product</h3>
+              <span class="finding-location">EXPERIENCE.md §Component Patterns → Echo bubble</span>
+            </header>
+            <div class="finding-note">Echo bubbles carry "the edges of its own zone", so "<strong>neither copy shows the object in full</strong>". No view of a multi-network object shows all its edges in that mode. Disclosed as an accepted cost of the geometry; never weighed against the brief statement. Mitigated by mode B not being the default.</div>
+            <div class="finding-fix"><strong>Fix:</strong> weigh it against "the edges are the actual product" out loud, in the mode B row.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">D5 — The three-seam architecture constraint is unacknowledged where the UI couples to the collector</h3>
+              <span class="finding-location">EXPERIENCE.md §Voice and Tone, §State Patterns → Socket unreachable</span>
+            </header>
+            <div class="finding-note">The brief calls collector/model/renderer independence "<strong>a binding input to the architecture work</strong>". Two UX decisions sit on that seam and neither notes it: the hard voice rule that Docker nouns are "never renamed, never prettified" (a renderer-level commitment to one collector's vocabulary), and the socket-unreachable screen, the only teaching screen in the product, whose content is Swarm-specific by construction. Not a contradiction — v1 is Swarm-only by written decision — but a second collector later means both surfaces change, and nobody has been told.</div>
+            <div class="finding-fix"><strong>Fix:</strong> one note at each of the two surfaces.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">M1 — The empty-filter fallback is a filter that does not remove; disclosed but unmarked</h3>
+              <span class="finding-location">EXPERIENCE.md §State Patterns → Filter yields nothing</span>
+            </header>
+            <div class="finding-note">When a filter would empty the map, excluded objects return at <code>{opacity.dim.filter-context}</code> 0.10. In that state the brief's rule "only filtering takes things away" does not hold. It is disclosed, reasoned, and confined to one case — but it is not marked with the convention, and it is the one case where the rule is actually broken.</div>
+            <div class="finding-fix"><strong>Fix:</strong> mark it.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">R4 — The non-specialist bar is asserted as met by rung-0 pastilles, untested</h3>
+              <span class="finding-location">EXPERIENCE.md §Interaction Primitives (LOD rung 0)</span>
+            </header>
+            <div class="finding-note">"From far away you see <em>what</em> things are before you understand them — <strong>the brief's non-specialist bar</strong>." The brief's bar is that a non-specialist could <em>follow the picture</em>. Rung 0 offers a coloured square whose meaning is decoded in a legend band, over object names that by hard rule are never prettified. It may satisfy the bar; asserting that it does, without a test, borrows the brief's authority for an untested claim. <code>DESIGN.md</code> §Open Questions is admirably honest that rung-0 legibility "<strong>needs a real cluster of a few hundred objects, not a lab of three</strong>" — this is the same claim made without that hedge.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add the same hedge, or drop the attribution.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== REVIEWER: ACCESSIBILITY ===================== -->
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Accessibility — does the Accessibility Floor tell the truth?</h2>
+          <span class="reviewer-source">review-accessibility.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Reviewer lens: <strong>does the Accessibility Floor tell the truth?</strong> Not "is Portolan accessible" — the scoping decisions (no keyboard traversal, no screen-reader support) were taken knowingly and are not reopened here. Every ratio and every colour-distance below was recomputed from the hex values in <code>DESIGN.md</code>'s frontmatter (sRGB relative luminance per WCAG 2.x; dichromat simulation per Viénot, Brettel &amp; Mollon 1999; ΔE in CIELAB).</p>
+            <p>The floor is <strong>honest about what it refuses and dishonest about the one thing it claims to have solved.</strong> Keyboard traversal and screen-reader support are excluded in plain, unsoftened language in a place a reader will find — that half is exemplary. But the bullet <strong>"Value-level colour is colour-vision-safe"</strong> is true for two of the four pastille families and false for the other two, verified numerically: the health fix was generalised into a blanket claim, and the obligation it delegates to <code>DESIGN.md</code> is never discharged there. Alongside it sit three smaller promises the documents contradict from inside themselves — the contrast table measures a colour the components section does not assign, the 9px type floor is broken by four roles in its own ramp at the default setting, and "nothing drifts" is refuted by a <code>drift: ±3.4px</code> token in the other spine.</p>
+            <p>The measurement discipline is real where it was applied: the iso-luminant zone rotation genuinely works, and nine of the twelve table rows check out. The problem is coverage and one generalisation, not sloppiness.</p>
+            <p><span class="reviewer-source">Consolidation note: this reviewer's contrast-table-row-1 finding is merged into Token completeness; its network-pastille finding into the legibility reviewer's critical; its "table covers only map marks" finding into Token completeness; its 9px-floor finding into the legibility reviewer's. The legibility reviewer's drift-vs-clearance finding is merged into the motion-drift finding below.</span></p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">"Value-level colour is colour-vision-safe" is false for the stack and network families</h3>
+              <span class="finding-location">EXPERIENCE.md → Accessibility Floor → In scope, bullet 2</span>
+            </header>
+            <div class="finding-note">Measured, deuteranopia, dark palette: object type (square, 5 values) worst pair <strong>ΔE 20.5</strong> — safe; health (circle, 3 values) <strong>ΔE 18.7</strong> — safe; <strong>stack</strong> (diamond, 7 values) worst pair <strong>ΔE 3.9</strong> (<code>stack-3</code> <code>#6FB2A0</code> / <code>stack-4</code> <code>#C48FA8</code>) — <strong>not distinguishable</strong>; <strong>network</strong> (hexagon, 6 values) <strong>ΔE 2.6</strong> (<code>network-1</code> <code>#4A8296</code> / <code>network-3</code> <code>#7A7695</code>) — <strong>not distinguishable</strong>. Light palette is worse: stack ΔE 2.9, and zone tints <code>t1</code>/<code>t3</code> simulate to <strong>ΔE 0.0</strong> — byte-identical after deuteranopia. ΔE &lt; 3 is <em>the same colour</em>. The health fix was allowed to imply the other three families were covered; <code>.memlog</code> 101 corrects the earlier false claim and instructs that value-level distinctions be stated as not covered, then <code>.memlog</code> 112 fixes health alone and licenses the generalisation. One family was repaired; four families' worth of claim was written. And the obligation it delegates — "<code>DESIGN.md</code> owns keeping it true" — is never discharged: <code>DESIGN.md</code> mentions colour-vision deficiency exactly twice, both about health.</div>
+            <div class="finding-note"><strong>The concrete downstream loss is nameable.</strong> Flow 1 step 6, "<strong>Climax — the intruder</strong>", is <em>"a bubble sitting inside the <code>frontend</code> zone whose stack pastille says something else. The mismatch between the zone and the badge</em> is <em>the anomaly."</em> Both halves of that comparison — zone tint and stack pastille — are in the failing set. A deuteranope cannot perform the second of the primary journey's three discoveries. Nothing in either spine says so.</div>
+            <div class="finding-fix"><strong>Fix (wording, not palette):</strong> split the claim. In scope: name type — the only family at rung 0, and therefore the whole of the screenshot frame — and health as value-safe. Then, under <em>Explicitly out of scope, v1</em>, a third bullet in the same register as the other two: "<strong>Value-level colour in the stack and network pastille families.</strong> Six-value rotations at pastille size are not separable under deuteranopia or protanopia; the exact value is available only in the detail panel. Raised and not solved in v1. <strong>Consequence, stated: the zone-versus-stack-pastille mismatch that Flow 1 step 6 turns on is not available to a colour-blind reader.</strong>" And delete "<code>DESIGN.md</code> owns keeping it true" unless <code>DESIGN.md</code> is given a matching constraint — an unowned obligation reads as coverage.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">"Nothing drifts" is refuted by the other spine's own token, and the drift breaks the never-overlap guarantee</h3>
+              <span class="finding-location">EXPERIENCE.md → State Patterns → Alive at rest, vs DESIGN.md frontmatter motion.breathe</span>
+            </header>
+            <div class="finding-note">"Motion is local deformation only, never translation… the centre does not move by a pixel… <strong>Nothing drifts</strong>" is refuted by <code>{motion.breathe}</code>'s own <code>drift: ±3.4px</code> over <code>9 / 11 / 13 / 15 / 17 / 19 / 23s</code>, plus <code>edge-drift ±1.3px</code>. Per <code>.memlog</code> 148, "core, name, id and pastille rail drift but never deform". The <em>layout anchor</em> is invariant; the drawn body, its label and its click target travel up to <strong>6.8px peak-to-peak</strong>, continuously, by default — and there is no keyboard alternative for anyone who cannot track it.</div>
+            <div class="finding-note"><strong>Converges (legibility reviewer):</strong> the same seam has a geometric consequence. <code>{motion.breathe.drift}</code> ±3.4px is described in the shape study as "about 7% of a 48px radius"; at map scale it is <strong>24–36% of the radius</strong>. Against <code>{spacing.cell-clearance}</code> 8px, two neighbours drifting toward each other consume <strong>6.8px of the 8px gap</strong>. The reserved-cell rule guarantees that <em>anchors</em> never overlap; it does not guarantee that <em>rendered silhouettes</em> never overlap, which is what the silhouette-as-data-channel decision actually requires. Drift amplitude and clearance were specified against different radii and were never reconciled. Separately: 325 independent oscillators on seven periods means peripheral motion captures the eye continuously and it never settles.</div>
+            <div class="finding-fix"><strong>Fix:</strong> say what <code>DESIGN.md</code> actually specifies — "the <strong>layout anchor</strong> never moves: a bubble is always found where it was left. The drawn body excursions within its reserved cell by ±3.4px, zero-mean and non-accumulating; <code>prefers-reduced-motion</code> stills that excursion with the rest of <code>{motion.breathe}</code>." Drop "Nothing drifts." Then express drift as a fraction of the current body radius rather than in absolute pixels, and add <em>still the chart</em> as a left-menu display control alongside text size, density and theme — the only motion escape today is an OS setting most users have never touched.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">No route to enlarged text anywhere in the product</h3>
+              <span class="finding-location">EXPERIENCE.md → Responsive &amp; Platform / Accessibility Floor · DESIGN.md → Layout</span>
+            </header>
+            <div class="finding-note">Browser and OS zoom are never mentioned in either spine, and are actively blocked by a decision taken for other reasons. <code>{layout.min-width}</code> 1440px with an off-chart refusal below it means the standard remedy for small text fails: a 1440px display trips off-chart at <strong>110%</strong> browser zoom; 1920px at 150%; even 2560px at 200%. Combined with an in-app ceiling of 1.15×, there is <strong>no route to 200% text anywhere in the product</strong>, and no route to the 16px browser default — sans tops out at 14.95px. The 1440px floor is a legitimate scoping decision; its interaction with the <em>stated</em> adjustable-text requirement was never noticed.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state it in the Floor — "Adjustable text size spans 0.90–1.15 and multiplies every rendered size. Browser zoom is <strong>not</strong> a supported enlargement path: it reduces the CSS viewport below <code>{layout.min-width}</code> and triggers the off-chart message. In-app text scaling is the only route, and its ceiling is +15%." An honest ceiling is a promise; an unbounded one is not.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Zone isolines fail their own 3:1 floor as rendered</h3>
+              <span class="finding-location">DESIGN.md → contrast table row 9, vs frontmatter opacity.zone-isoline</span>
+            </header>
+            <div class="finding-note">Raw hex: 3.22–3.67 ✓. But <code>{opacity.zone-isoline}</code> <strong>0.85</strong> applies to that mark: composited it is <strong>2.68–3.03:1</strong>, failing on five of six tints. The table measured the colour, not the mark.</div>
+            <div class="finding-note"><strong>Converges:</strong> the rubric walker independently flagged <code>opacity.zone-isoline</code> as an orphan token and predicted exactly this — "if 0.85 does apply then the table's 3.2–3.7 is overstated". It applies.</div>
+            <div class="finding-fix"><strong>Fix:</strong> measure the composited mark, or drop the opacity — it buys little against a 1.18:1 field.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The bubble contour is measured over the canvas, but bubbles sit inside zones by construction</h3>
+              <span class="finding-location">DESIGN.md → contrast table row 11</span>
+            </header>
+            <div class="finding-note">3.25 / 3.04 ✓ over bare canvas. Over <code>zone-tint-1</code> the contour is <strong>2.75:1</strong>, below the stated 3:1. The load-bearing case is not the one measured — the same class of error the edge rows got right.</div>
+            <div class="finding-fix"><strong>Fix:</strong> measure the contour over all six tints, as the edges already are.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Focus indication is forbidden without a replacement</h3>
+              <span class="finding-location">DESIGN.md → Do's and Don'ts, row 5</span>
+            </header>
+            <div class="finding-note">The only mention of "focus" in either spine is the Don't reserving glass for selection; no focus token, ring or outline exists. This compounds a hole the session never reached: <em>"Keyboard shortcuts — none, anywhere"</em> sits under a heading called <strong>Banned</strong>, and "anywhere" is broader than the map while "Banned" is stronger than "out of scope". A builder reading both spines finds keyboard input banned "anywhere", the one obvious focus treatment forbidden, and nothing else — so the reasonable inference is that the entire chrome is mouse-only, which would be a vastly larger exclusion than the two that were actually taken. It may also be an accident of phrasing. <strong>The spines do not settle it, and it needs one sentence, not a discussion.</strong></div>
+            <div class="finding-fix"><strong>Fix:</strong> narrow <em>Banned</em> to "<strong>Keyboard accelerators — none.</strong> No single-key shortcuts, no modifier chords, no <code>Esc</code>, no <code>0</code>." Add to the Floor's <em>In scope</em> list: "<strong>Standard tab focus on the chrome.</strong> The left menu, the bottom tabs and the on-screen controls are ordinary focusable elements in DOM order with a visible focus indicator. Only the <em>graph canvas</em> is pointer-only." And add a focus token distinct from glass — a 2px <code>{colors.steel}</code> outline at 2px offset reads at 5.3:1 on the panel and is consistent with the metal discipline. If the opposite is intended, say <em>that</em> plainly instead — but it must be said.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The kept set under <code>prefers-reduced-motion</code> is not the small half</h3>
+              <span class="finding-location">EXPERIENCE.md → State Patterns → Reduced motion · DESIGN.md motion.draw / motion.relayout</span>
+            </header>
+            <div class="finding-note">The layered first draw is kept on an "explanatory motion kept" rationale, but the spines describe it as decoration: <em>"The first movement is <strong>the pitch</strong> — he has not clicked anything yet"</em> (Flow 2 step 2). It explains no change. <code>{motion.relayout}</code> — 900ms of every body travelling curved paths across the whole map — is also kept, and large-area movement is the hazard class the media query primarily exists for. The line is defensible; the kept set is not.</div>
+            <div class="finding-fix"><strong>Fix:</strong> apply the document's own test — still <code>{motion.draw}</code> and <code>{motion.settle}</code> under the media query (render the finished map directly; nothing is lost, as <code>motion.reduced-motion</code> already says of breathe), keep <code>{motion.enter}</code> / <code>{motion.exit}</code> / selection, and note that <code>{motion.relayout}</code> is retained deliberately because following an object between geometries <em>is</em> the function, with its 900ms amplitude stated.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The contrast floors are stated for the un-veiled chart only; the health verdict is the mark that fades most</h3>
+              <span class="finding-location">DESIGN.md → Components → Stale map</span>
+            </header>
+            <div class="finding-note">The staleness veil (α 0.42 + saturation to 0.35) degrades every floor, and only text is exempted by claim — "Text never drops below 4.2:1 at maximum staleness" verifies at 5.53 dark / 4.58 light. But nothing else is exempt: the health <code>stopped</code> circle falls to <strong>2.13:1</strong> under the same veil, against a stated 4:1 floor. The one verdict the product renders is the mark that fades most.</div>
+            <div class="finding-fix"><strong>Fix:</strong> extend the stale-map sentence — "text never drops below 4.2:1; the health circle does, reaching 2.1:1 at full staleness. An aged chart is a chart, and its verdict ages with it."</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">No minimum mark size to match the 9px type floor, and the rail already overflows the core</h3>
+              <span class="finding-location">DESIGN.md → Shapes → shape.pastille, shape.bubble.core, shape.bubble.radius</span>
+            </header>
+            <div class="finding-note">There is a hard floor for glyphs and none for pastilles, whose 10×10px is the sole carrier of the health verdict. This becomes live immediately: the rail is <code>n × 10px + (n−1) × 5.5px</code>, and the core it must sit inside is <code>0.59 × 2r</code>. Every container carries at least type + stack + one network + health = <strong>56.5px of rail into a 54.3px core</strong> at default density; a volume needs 41px into 37.8px. Something has to give, and the three candidates are shrinking the marks (no floor stated), shrinking the gap, or breaching the core (forbidden, and "the straight pastille rail depends on it"). The spines forbid one option and are silent on the other two.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state a mark floor alongside the type floor — "no pastille renders below 8px; if the rail cannot fit, the LOD rung drops a family" — which mirrors the rule Typography already uses.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The adjustable-text promise is stated with no range in the spine that makes it a floor item</h3>
+              <span class="finding-location">EXPERIENCE.md → Accessibility Floor, bullet 3</span>
+            </header>
+            <div class="finding-note"><code>DESIGN.md</code> gives the range (0.90 / 1.00 / 1.15) and what it multiplies. <code>EXPERIENCE.md</code> states the promise with <strong>no range at all</strong>, and neither spine says the layout survives 1.15× against fixed 236px / 320px chrome columns — no overflow, wrap, scroll or truncation behaviour is specified for either. Ceiling is +15%: body text tops out at 14.95px.</div>
+            <div class="finding-fix"><strong>Fix:</strong> carry the 0.90/1.00/1.15 range and "multiplies every rendered size; density is a separate control" into the Floor bullet, and add one sentence on chrome behaviour at 1.15.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">DESIGN.md carries no accessibility statement, no floor and no cross-reference</h3>
+              <span class="finding-location">DESIGN.md → Colors</span>
+            </header>
+            <div class="finding-note"><code>DESIGN.md</code> is the document a visual builder opens, the document that owns every colour, and the document <code>EXPERIENCE.md</code> delegates the CVD obligation to. Its Colors section opens <em>"Measured, not asserted"</em>, which reads as full coverage of a topic it covers partially. Someone implementing the palette from <code>DESIGN.md</code> alone will never learn that keyboard and screen-reader are out, nor that colour carries an unresolved value-level dependence.</div>
+            <div class="finding-fix"><strong>Fix:</strong> four lines at the end of Colors — "Colour-vision coverage: type ✓, health ✓, stack ✗, network ✗; zone tint is a grouping cue only, identity is the label. Keyboard and screen-reader support are out of scope for v1 — see <code>EXPERIENCE.md</code> → Accessibility Floor." One paragraph closes the gap.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Contrast table row 4 states a failure that does not exist</h3>
+              <span class="finding-location">DESIGN.md → contrast table row 4</span>
+            </header>
+            <div class="finding-note">Stack pastille, light, asserts <strong>3.5–6.6</strong> against its own 4.5:1 floor; the real range is <strong>4.83–6.56</strong>, which passes. The row states a failure that does not exist and contradicts itself in the same line — evidence the table was transcribed rather than re-derived.</div>
+            <div class="finding-fix"><strong>Fix:</strong> correct to 4.8–6.6.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Six type roles carry no colour token at all</h3>
+              <span class="finding-location">DESIGN.md → Components</span>
+            </header>
+            <div class="finding-note"><code>bubble-name</code>, <code>plate</code>, <code>zone-label</code>, <code>zone-sub</code>, <code>section-label</code>, <code>graduation</code> — so two of the table's twelve rows measure pairs the Components section never assigns.</div>
+            <div class="finding-fix"><strong>Fix:</strong> assign them; the table is otherwise unverifiable by a builder.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title"><code>brass-light</code> as text fails 4.5:1 in two places</h3>
+              <span class="finding-location">DESIGN.md → Components → Detail panel, Chart legend</span>
+            </header>
+            <div class="finding-note"><strong>3.91:1</strong> on <code>panel-light</code> (mount flags in the detail panel) and 4.06:1 on the light chart-legend ground — both below 4.5:1, at <code>{typography.section-label}</code> 8px in the legend case.</div>
+            <div class="finding-fix"><strong>Fix:</strong> darken <code>brass-light</code> toward <code>#7A6430</code> for text use, or exempt it explicitly as a graphical mark.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Colors prose says body ink is "15:1 in either mode"; light is 18.08:1</h3>
+              <span class="finding-location">DESIGN.md → Colors, "Ground and ink"</span>
+            </header>
+            <div class="finding-note">The table itself says 18.1.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "15:1 dark, 18:1 light".</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title"><code>Space</code> + drag pans, inside a decision recorded as "Keyboard shortcuts — none, anywhere"</h3>
+              <span class="finding-location">EXPERIENCE.md → Interaction Primitives</span>
+            </header>
+            <div class="finding-note">Space is also the browser's activate-focused-control key, so it will collide with any tab order added later.</div>
+            <div class="finding-fix"><strong>Fix:</strong> fold into the accelerator rewording — "Space-drag is a pointer modifier, not a shortcut" — and note the collision.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Active-tab indication rests on a 1.04:1 background differential</h3>
+              <span class="finding-location">DESIGN.md → Components → Bottom tab bar</span>
+            </header>
+            <div class="finding-note">A 1px inset rule plus a colour change: the active background differential is <strong>1.04:1</strong> dark / <strong>1.01:1</strong> light. Which of three views you are in is the most load-bearing state in the chrome.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep the rule but thicken it, or give the active tab a real ground step.</div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Attachment edge measures 4.18:1 dark where the table says 4.2</h3>
+              <span class="finding-location">DESIGN.md → contrast table row 8</span>
+            </header>
+            <div class="finding-note">Rounding down. Floor is 3:1, so no consequence beyond the "measured" claim.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state 4.18, or round consistently.</div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li><strong>Consolidation.</strong> 84 raw findings across four reports (rubric 30, legibility-at-scale 16, brief-fidelity 16, accessibility 22). Six were duplicates found by two reviewers independently and are merged, giving <strong>78 consolidated findings: 7 critical · 18 high · 33 medium · 20 low</strong>. Each merged finding carries a <em>Converges</em> line naming both lenses.</li>
+        <li><strong>Count discrepancy.</strong> <code>.memlog.md</code> entry 161 records "83 findings … accessibility 21". The accessibility report's own findings list carries 22 bullets (2 critical · 5 high · 9 medium · 6 low), so the true raw total is 84. The brief-fidelity report likewise states "5 medium, 3 low–medium" in its header while its own summary table carries 6 medium and 2 low–medium; the table was taken as authoritative and its two Low–Med findings normalised upward to medium.</li>
+        <li><strong>Ruled on since the review.</strong> Ten findings are marked rather than deleted — eight fully resolved, two partly. One ruling (the hue + pattern octave) closes two criticals at once, because the pattern rides on the zone as well as the badge. The spines themselves have <strong>not</strong> yet been edited: <code>DESIGN.md:725</code> still carries the <code>SOCKET MOUNTED :RO</code> chrome and <code>EXPERIENCE.md:30</code> still asserts the contradiction inside the brief. The rulings exist in <code>.memlog.md</code>; the edits do not exist in the spines.</li>
+        <li><strong>Numbers preserved.</strong> All recomputed contrast ratios and ΔE values are the reviewers' own figures, carried through unrounded and unaltered.</li>
+        <li><strong>Frontmatter.</strong> Both files parse as valid YAML. Both carry <code>name</code>, <code>description</code>, <code>status: draft</code>, <code>updated: 2026-09-10</code> and a two-entry <code>sources</code> list; both source paths resolve from each file's own directory. DESIGN.md declares 17 top-level keys (5 canonical + 7 declared extensions + 5 metadata); EXPERIENCE.md declares metadata only, which is correct for a spine that owns no tokens.</li>
+        <li><strong>Cross-references.</strong> 84 distinct <code>{path.to.token}</code> references across the pair. All resolve except the generic <code>{token}</code> placeholder used in prose in both files and <code>{colors.pastille-*}</code> at EXPERIENCE.md:76 and 158. EXPERIENCE.md uses 30 distinct references, matching <code>.memlog.md</code> entry 137.</li>
+        <li><strong>Colours.</strong> 122 tokens, every value a valid six-digit hex, every non-<code>-light</code> token with a <code>-light</code> twin and every <code>-light</code> token with a base — zero exceptions. The light palette really is complete, not derived. The one colour without a light value (<code>#46535C</code>) escapes only because it was never tokenised.</li>
+        <li><strong>Contrast.</strong> All 12 table rows were recomputed independently by two reviewers; every stated ratio is correct to within rounding, and the claimed iso-luminance of the six-hue zone rotation holds (1.13–1.19 against ground in both modes). Nine of twelve verify to ±0.05 under the stricter accessibility recomputation; the three that do not are rows 4, 9 and 11, each filed above.</li>
+        <li><strong>Name consistency.</strong> No component-name drift in either direction across the four lists. <code>Export (SVG / PNG)</code> matches exactly in both files; <code>Orphan bubble</code> and <code>Orphan counter</code> are correctly kept distinct; the left menu's <code>filter swatch</code> and the <code>chart legend</code> are explicitly distinguished — a named risk in <code>.memlog.md</code> entry 160, handled.</li>
+        <li><strong>No Mermaid</strong> in either file — nothing to validate.</li>
+        <li><strong>Working artifacts.</strong> <code>ia-portolan-2026-09-10.excalidraw</code> parses, 79 elements, and contradicts the drift note that describes it. Its text is in French while the decided UI language is English — not a conflict under spines-win, but worth knowing before it is promoted to <code>wireframes/</code>. The six HTML files all carry <code>&lt;title&gt;</code> and are self-contained.</li>
+        <li><strong>What holds, and is worth not losing.</strong> The structural bet is right and is the one that matters: networks as areas rather than edges converts ~660 of ~700 edges into local stubs, leaving ~40 long edges and ≈5 expected crossings — Portolan does not hairball. Killing image nodes removed the single worst structure the graph could contain. The iso-luminant rotation genuinely works (mount 7.30–7.73, attach 4.18–4.42 across all six tints, a 6% spread). The object-type family is CVD-safe and it is the only family at rung 0. Light mode survives the scale test better than the dark default. And the keyboard and screen-reader exclusions are the model the rest of the floor should be rewritten to match: named, unhedged, consequence drawn.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>DESIGN.md: DESIGN.md</span>
+        <span>EXPERIENCE.md: EXPERIENCE.md</span>
+        <span>Rubric: review-rubric.md</span>
+        <span>Generated: 2026-09-11T06:37:14+00:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
