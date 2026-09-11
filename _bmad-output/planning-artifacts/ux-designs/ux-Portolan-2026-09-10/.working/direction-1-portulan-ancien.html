@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portolan — Direction 1 : Portulan ancien</title>
+<style>
+/* =====================================================================
+   PORTOLAN — DIRECTION 1 « PORTULAN ANCIEN »
+   Palette complète — valeurs à reprendre telles quelles.
+
+   FONDS / SURFACES
+   --d-ground        #14100B   fond application (nuit d'encre)
+   --d-ground-2      #1B160E   panneaux latéraux
+   --d-ground-3      #221C12   champs, puces, encarts
+   --d-canvas        #100D08   fond de la carte
+   --d-rule          #3A2F1D   filets, séparateurs
+   --d-rule-soft     #2A2216   filets discrets
+
+   ENCRES / TEXTE
+   --d-vellum        #EADCC0   encre claire (texte principal)
+   --d-vellum-2      #C3B190   texte secondaire
+   --d-vellum-3      #8C7C60   texte tertiaire / marginalia
+
+   ACCENTS CARTOGRAPHIQUES
+   --d-brass         #C79A46   laiton — rose des vents, filets d'accent
+   --d-brass-dim     #7A5E2A   rhumbs, hachures de côte
+   --d-oxide         #B0563A   rouge oxyde — sélection, ruban d'état
+
+   PASTILLES — STACK (losange)
+   --d-stack-shop    #D9963F   ambre       = stack shop
+   --d-stack-obs     #6E9E8C   vert-de-gris = stack obs
+   --d-stack-none    #6E6353   gris        = hors stack
+
+   PASTILLES — ÉTAT (cercle)
+   --d-state-run     #7FA05C   en marche
+   --d-state-restart #C87F2E   redémarrages récents
+   --d-state-stop    #6E6558   arrêté
+
+   ZONES DE RÉSEAU (fond 55 % + trait de côte)
+   --d-net-front     #163A44 / trait #3D7D8C   frontend    10.0.3.0/24
+   --d-net-back      #3B2E19 / trait #8A6A2E   backend     10.0.9.0/24
+   --d-net-mon       #2C3D2A / trait #5F8A50   monitoring  10.0.14.0/24
+
+   MODE CLAIR (même encodage, encre sur papier)
+   --l-ground        #EFE4C8   parchemin
+   --l-panel         #E5D7B5
+   --l-ink           #2B2117
+   --l-ink-2         #6B5B44
+   --l-brass         #8C6A22
+   --l-net-front     #BFD8DC   --l-net-back #E2D2A6   --l-net-mon #CBDBBE
+   ===================================================================== */
+
+:root{
+  --d-ground:#14100B; --d-ground-2:#1B160E; --d-ground-3:#221C12; --d-canvas:#100D08;
+  --d-rule:#3A2F1D; --d-rule-soft:#2A2216;
+  --d-vellum:#EADCC0; --d-vellum-2:#C3B190; --d-vellum-3:#8C7C60;
+  --d-brass:#C79A46; --d-brass-dim:#7A5E2A; --d-oxide:#B0563A;
+  --d-stack-shop:#D9963F; --d-stack-obs:#6E9E8C; --d-stack-none:#6E6353;
+  --d-state-run:#7FA05C; --d-state-restart:#C87F2E; --d-state-stop:#6E6558;
+  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:#0B0906;color:var(--d-vellum);font-family:var(--serif);}
+
+/* ---------- en-tête du document ---------- */
+.doc{max-width:1560px;margin:0 auto;padding:40px 32px 72px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--d-brass);margin:0 0 10px}
+h1{font-size:34px;font-weight:600;letter-spacing:.01em;margin:0 0 14px;color:var(--d-vellum)}
+h1 small{display:block;font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--d-vellum-3);font-family:var(--mono);margin-top:8px}
+.rationale{max-width:78ch;font-size:16.5px;line-height:1.65;color:var(--d-vellum-2);margin:0 0 8px}
+.rationale em{color:var(--d-vellum);font-style:italic}
+.hr{height:1px;background:linear-gradient(90deg,var(--d-brass),transparent);margin:28px 0 24px}
+
+/* ---------- cadre navigateur ---------- */
+.hero{overflow-x:auto;padding-bottom:8px}
+.frame{width:1440px;border:1px solid var(--d-rule);border-radius:10px;overflow:hidden;
+  box-shadow:0 34px 70px rgba(0,0,0,.72), 0 2px 0 rgba(234,220,192,.06) inset;background:var(--d-ground)}
+.titlebar{height:38px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#1A150D;border-bottom:1px solid var(--d-rule)}
+.dot{width:10px;height:10px;border-radius:50%;box-shadow:0 1px 0 rgba(0,0,0,.5) inset}
+.url{flex:1;height:22px;border-radius:11px;background:#100D08;border:1px solid var(--d-rule-soft);
+  display:flex;align-items:center;padding:0 12px;font-family:var(--mono);font-size:11px;color:var(--d-vellum-3);gap:8px}
+.url b{color:var(--d-vellum-2);font-weight:400}
+.airgap{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--d-brass-dim);border:1px solid var(--d-rule);border-radius:3px;padding:2px 6px}
+
+.app{display:flex;height:920px;background:var(--d-canvas)}
+
+/* ---------- barre latérale gauche ---------- */
+.side{width:236px;flex:0 0 236px;background:var(--d-ground-2);border-right:1px solid var(--d-rule);padding:14px 14px 0;overflow:hidden}
+.side h2{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--d-brass);
+  margin:18px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--d-rule-soft)}
+.side h2:first-child{margin-top:2px}
+.search{height:28px;border:1px solid var(--d-rule);background:var(--d-ground-3);border-radius:4px;display:flex;align-items:center;
+  padding:0 9px;font-family:var(--mono);font-size:11px;color:var(--d-vellum-3);gap:7px}
+.row{display:flex;align-items:center;gap:8px;padding:4.5px 2px;font-size:12.5px;color:var(--d-vellum-2);font-family:var(--sans)}
+.row .box{width:12px;height:12px;border:1px solid var(--d-brass-dim);border-radius:2px;flex:0 0 12px;
+  display:flex;align-items:center;justify-content:center;font-size:9px;color:#14100B;background:transparent}
+.row.on .box{background:var(--d-brass);border-color:var(--d-brass)}
+.row .sw{width:11px;height:11px;flex:0 0 11px;border-radius:2px}
+.row .cnt{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--d-vellum-3)}
+.side .note{font-family:var(--mono);font-size:9.5px;line-height:1.5;color:var(--d-vellum-3);margin-top:14px;
+  border-top:1px dashed var(--d-rule);padding-top:10px}
+
+/* ---------- colonne centrale ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.toolbar{height:40px;display:flex;align-items:center;gap:14px;padding:0 16px;background:#181309;border-bottom:1px solid var(--d-rule);
+  font-family:var(--mono);font-size:10.5px;color:var(--d-vellum-3);letter-spacing:.03em}
+.toolbar b{color:var(--d-vellum-2);font-weight:400}
+.toolbar .right{margin-left:auto;display:flex;gap:14px;align-items:center}
+.chip{border:1px solid var(--d-rule);border-radius:3px;padding:2px 7px;color:var(--d-brass)}
+.map{display:block;width:884px;height:760px;background:var(--d-canvas)}
+
+/* ---------- légende (marge de carte) ---------- */
+.legend{height:120px;border-top:1px solid var(--d-brass-dim);background:#15110A;display:flex;padding:10px 14px 0;gap:0}
+.lg{flex:1;padding:0 12px;border-right:1px dashed var(--d-rule);min-width:0}
+.lg:last-child{border-right:0}
+.lg h3{font-family:var(--mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--d-brass);margin:0 0 8px}
+.li{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:10.5px;color:var(--d-vellum-2);font-family:var(--sans);line-height:1.25}
+.li svg{flex:0 0 16px}
+.li code{font-family:var(--mono);font-size:10px;color:var(--d-vellum)}
+.lg p{margin:0;font-size:10px;line-height:1.45;color:var(--d-vellum-3);font-family:var(--sans)}
+.specimen{font-family:var(--mono);font-size:12.5px;color:var(--d-vellum);letter-spacing:.02em;margin-top:4px}
+.specimen span{color:var(--d-brass)}
+
+/* ---------- panneau de détail droit ---------- */
+.panel{width:320px;flex:0 0 320px;background:var(--d-ground-2);border-left:1px solid var(--d-rule);overflow:hidden}
+.panel .ph{padding:13px 16px 12px;border-bottom:1px solid var(--d-rule);background:#1F1910}
+.panel .ph .close{float:right;font-family:var(--mono);font-size:13px;color:var(--d-vellum-3)}
+.panel .ph .oid{font-family:var(--mono);font-size:16px;color:var(--d-vellum);letter-spacing:.01em}
+.panel .ph .sub{font-family:var(--sans);font-size:11px;color:var(--d-vellum-3);margin-top:4px}
+.panel .ph .pastilles{margin-top:9px;display:flex;gap:6px;align-items:center}
+.sec{padding:11px 16px 3px}
+.sec h4{font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--d-brass);margin:0 0 8px;
+  display:flex;align-items:baseline;gap:6px}
+.sec h4 s{text-decoration:none;color:var(--d-vellum-3)}
+.kv{display:flex;gap:8px;margin-bottom:5px;font-size:11.5px;line-height:1.45}
+.kv .k{width:74px;flex:0 0 74px;color:var(--d-vellum-3);font-family:var(--sans);font-size:10.5px;padding-top:1px}
+.kv .v{font-family:var(--mono);font-size:11px;color:var(--d-vellum);word-break:break-all}
+.kv .v i{font-style:normal;color:var(--d-vellum-3)}
+.mount{display:flex;align-items:baseline;gap:6px;font-family:var(--mono);font-size:11px;margin-bottom:6px}
+.mount .nm{color:var(--d-vellum);background:#241D12;border:1px solid var(--d-rule);border-radius:9px;padding:1.5px 7px}
+.mount .path{color:var(--d-vellum-2)}
+.mount .fl{margin-left:auto;color:var(--d-brass);font-size:9.5px;letter-spacing:.08em}
+.panel .foot{margin-top:10px;padding:10px 16px 14px;border-top:1px dashed var(--d-rule);
+  font-family:var(--sans);font-size:10px;line-height:1.5;color:var(--d-vellum-3)}
+
+/* ---------- barre d'onglets ---------- */
+.tabs{height:56px;display:flex;align-items:stretch;background:#1A150D;border-top:1px solid var(--d-brass-dim)}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:0 26px;font-family:var(--serif);font-size:14.5px;color:var(--d-vellum-3);
+  border-right:1px solid var(--d-rule-soft)}
+.tab .g{font-family:var(--mono);font-size:11px;color:var(--d-rule);border:1px solid var(--d-rule);border-radius:2px;padding:1px 4px}
+.tab.on{color:var(--d-vellum);background:linear-gradient(180deg,#2A2114,#1A150D);box-shadow:inset 0 2px 0 var(--d-brass)}
+.tab.on .g{color:var(--d-brass);border-color:var(--d-brass-dim)}
+.tabs .meta{margin-left:auto;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:10px;color:var(--d-vellum-3);gap:16px}
+
+/* ---------- bande mode clair ---------- */
+.lightstrip{margin-top:34px;border:1px solid var(--d-rule);border-radius:8px;overflow:hidden;max-width:1440px}
+.lightstrip .lh{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#1B160E;border-bottom:1px solid var(--d-rule);
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--d-brass)}
+.lightbody{display:flex;background:#EFE4C8;color:#2B2117}
+.swatches{width:430px;flex:0 0 430px;padding:16px 18px;border-right:1px solid #D2C09A}
+.swatches h5{margin:0 0 10px;font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8C6A22}
+.sw-row{display:flex;align-items:center;gap:9px;margin-bottom:6px;font-family:var(--mono);font-size:10.5px;color:#4B3D2A}
+.sw-row i{width:26px;height:14px;border-radius:2px;border:1px solid rgba(0,0,0,.25);flex:0 0 26px;display:block}
+.sw-row b{font-weight:400;color:#2B2117;width:78px;display:inline-block}
+.mini{flex:1;padding:10px 14px}
+.caption{font-family:var(--sans);font-size:11.5px;color:var(--d-vellum-3);margin-top:10px;max-width:100ch;line-height:1.6}
+.caption b{color:var(--d-vellum-2);font-weight:600}
+
+/* ---------- SVG carte : classes ---------- */
+.z-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.z-sub{font-family:var(--mono);font-size:9px;letter-spacing:.06em;fill:var(--d-vellum-3)}
+.n-label{font-family:var(--serif);font-size:13px;letter-spacing:.28em;text-transform:uppercase;fill:#5C4F38}
+.n-sub{font-family:var(--mono);font-size:9px;letter-spacing:.1em;fill:#443A28}
+.b-name{font-family:var(--serif);font-size:14px;font-weight:600;fill:var(--d-vellum);text-anchor:middle}
+.b-id{font-family:var(--mono);font-size:9.5px;fill:var(--d-vellum-3);text-anchor:middle}
+.v-name{font-family:var(--mono);font-size:11.5px;fill:var(--d-vellum);text-anchor:middle}
+.v-sub{font-family:var(--mono);font-size:8.5px;fill:var(--d-vellum-3);text-anchor:middle}
+.prot rect{fill:#241D12;stroke:var(--d-brass-dim);stroke-width:1}
+.prot text{font-family:var(--mono);font-size:10px;fill:var(--d-vellum);text-anchor:middle}
+.prot .stalk{stroke:var(--d-brass-dim);stroke-width:1.6;fill:none}
+.prot.net rect{fill:#1C2A2A;stroke:#4F7F84}
+.prot.vol rect{fill:#2A2113;stroke:var(--d-brass)}
+.marg{font-family:var(--mono);font-size:9px;letter-spacing:.14em;fill:var(--d-vellum-3)}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <p class="kicker">Portolan · Directions visuelles · 10 septembre 2026</p>
+  <h1>Direction 1 — Portulan ancien<small>Personnalité : la carte marine du XIV<sup>e</sup> siècle passée à la nuit</small></h1>
+  <p class="rationale">
+    Cette direction prend le nom du produit au mot : c'est un <em>portulan</em>, parchemin et encre ferro-gallique, mais retourné en négatif pour la nuit — vélin devenu lumière sur un fond de suie, laiton oxydé pour les instruments.
+    La toile de rhumbs part de deux roses des vents et traverse toute la carte sous les objets ; les zones de réseau sont bordées d'une hachure de côte dessinée à la main, comme un littoral relevé à la main.
+    C'est la plus chaleureuse et la plus texturée des quatre : elle assume que lire son cluster est un acte de navigation, pas de supervision.
+  </p>
+
+  <div class="hr"></div>
+
+  <!-- =========================== MAQUETTE 1:1 =========================== -->
+  <div class="hero">
+  <div class="frame">
+
+    <div class="titlebar">
+      <span class="dot" style="background:#7E5B3A"></span>
+      <span class="dot" style="background:#8C7A44"></span>
+      <span class="dot" style="background:#5E7A58"></span>
+      <div class="url"><span style="color:#6E9E8C">▮</span> <b>https://portolan.node-01.internal</b>/vue-ensemble</div>
+      <span class="airgap">HORS LIGNE · AUCUNE RESSOURCE EXTERNE</span>
+    </div>
+
+    <div class="app">
+
+      <!-- ················ barre latérale : filtres et affichage ················ -->
+      <aside class="side">
+        <div class="search"><span style="color:var(--d-brass-dim)">⌕</span> Rechercher un objet…</div>
+
+        <h2>Filtres — réseaux</h2>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:#3D7D8C"></span> frontend <span class="cnt">2</span></div>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:#8A6A2E"></span> backend <span class="cnt">3</span></div>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:#5F8A50"></span> monitoring <span class="cnt">2</span></div>
+
+        <h2>Filtres — stacks</h2>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:var(--d-stack-shop);transform:rotate(45deg)"></span> shop <span class="cnt">3</span></div>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:var(--d-stack-obs);transform:rotate(45deg)"></span> obs <span class="cnt">2</span></div>
+        <div class="row on"><span class="box">✓</span><span class="sw" style="background:var(--d-stack-none);transform:rotate(45deg)"></span> hors stack <span class="cnt">1</span></div>
+
+        <h2>Filtres — nœuds</h2>
+        <div class="row on"><span class="box">✓</span> node-01 <span class="cnt">3</span></div>
+        <div class="row on"><span class="box">✓</span> node-02 <span class="cnt">3</span></div>
+        <div class="row on"><span class="box">✓</span> node-03 <span class="cnt">2</span></div>
+
+        <h2>Affichage</h2>
+        <div class="row on"><span class="box">✓</span> Zones de réseau</div>
+        <div class="row on"><span class="box">✓</span> Étiquettes de raccord</div>
+        <div class="row on"><span class="box">✓</span> Volumes</div>
+        <div class="row on"><span class="box">✓</span> Liens de co-réseau</div>
+        <div class="row on"><span class="box">✓</span> Fond des nœuds</div>
+        <div class="row on"><span class="box">✓</span> Rose des vents et rhumbs</div>
+        <div class="row on"><span class="box">✓</span> Dérive des bulles</div>
+        <div class="row"><span class="box"></span> Mode clair</div>
+
+        <p class="note">Lecture seule.<br>Portolan n'écrit jamais<br>dans le cluster.</p>
+      </aside>
+
+      <!-- ················ carte ················ -->
+      <div class="main">
+        <div class="toolbar">
+          <span>Cluster <b>prod-swarm</b></span>
+          <span>6 conteneurs · 3 réseaux · 3 volumes · 3 nœuds</span>
+          <span class="right">
+            <span class="chip">ÉTAT MONTRÉ : CONTENEUR ORPHELIN</span>
+            <span>actualisé il y a 4 s</span>
+          </span>
+        </div>
+
+        <svg class="map" viewBox="0 0 884 760" role="img"
+             aria-label="Vue d'ensemble du cluster prod-swarm : stacks shop et obs, réseaux frontend, backend et monitoring, volumes pgdata, pg-data et grafana-store, sur les nœuds node-01 à node-03.">
+          <defs>
+            <!-- grain de papier -->
+            <filter id="grain" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+              <feColorMatrix type="saturate" values="0"/>
+            </filter>
+            <!-- élévation douce des bulles -->
+            <filter id="lift" x="-60%" y="-60%" width="220%" height="220%">
+              <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#000000" flood-opacity=".75"/>
+            </filter>
+            <filter id="liftS" x="-60%" y="-60%" width="220%" height="220%">
+              <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity=".7"/>
+            </filter>
+            <!-- corps des bulles -->
+            <radialGradient id="gCont" cx="34%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#3A2F1E"/><stop offset="55%" stop-color="#241C11"/><stop offset="100%" stop-color="#14100A"/>
+            </radialGradient>
+            <radialGradient id="gVol" cx="34%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#33291A"/><stop offset="100%" stop-color="#161108"/>
+            </radialGradient>
+            <radialGradient id="gOrph" cx="34%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#241F19"/><stop offset="100%" stop-color="#120F0B"/>
+            </radialGradient>
+            <!-- hachures de côte -->
+            <pattern id="hF" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#3D7D8C" stroke-width="1" opacity=".30"/></pattern>
+            <pattern id="hB" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#8A6A2E" stroke-width="1" opacity=".28"/></pattern>
+            <pattern id="hM" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(90)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#5F8A50" stroke-width="1" opacity=".26"/></pattern>
+            <!-- rose des vents (centrée sur 0,0) -->
+            <g id="rose">
+              <polygon points="0,-44 6.5,-15.7 31.1,-31.1 15.7,-6.5 44,0 15.7,6.5 31.1,31.1 6.5,15.7 0,44 -6.5,15.7 -31.1,31.1 -15.7,6.5 -44,0 -15.7,-6.5 -31.1,-31.1 -6.5,-15.7"
+                       fill="#1C1610" stroke="#C79A46" stroke-width="1.1"/>
+              <polygon points="0,-44 6.5,-15.7 15.7,-6.5 44,0 15.7,6.5 6.5,15.7 0,44 -6.5,15.7 -15.7,6.5 -44,0 -15.7,-6.5 -6.5,-15.7"
+                       fill="#C79A46" opacity=".22"/>
+              <circle r="46" fill="none" stroke="#7A5E2A" stroke-width=".8"/>
+              <circle r="52" fill="none" stroke="#7A5E2A" stroke-width=".5" stroke-dasharray="1 4"/>
+              <circle r="4" fill="#C79A46"/>
+            </g>
+          </defs>
+
+          <rect width="884" height="760" fill="#100D08"/>
+
+          <!-- ============ COUCHE DE FOND : NŒUDS SWARM (bandes) ============ -->
+          <g>
+            <rect x="0" y="0" width="330" height="760" fill="#171208"/>
+            <rect x="330" y="0" width="290" height="760" fill="#12100B"/>
+            <rect x="620" y="0" width="264" height="760" fill="#171208"/>
+            <line x1="330" y1="0" x2="330" y2="760" stroke="#332A1B" stroke-width="1" stroke-dasharray="3 6"/>
+            <line x1="620" y1="0" x2="620" y2="760" stroke="#332A1B" stroke-width="1" stroke-dasharray="3 6"/>
+            <text class="n-label" x="165" y="32" text-anchor="middle">node-01</text>
+            <text class="n-sub" x="165" y="47" text-anchor="middle">manager · 8 vCPU · 32 Gio</text>
+            <text class="n-label" x="475" y="32" text-anchor="middle">node-02</text>
+            <text class="n-sub" x="475" y="47" text-anchor="middle">worker · 4 vCPU · 16 Gio</text>
+            <text class="n-label" x="752" y="32" text-anchor="middle">node-03</text>
+            <text class="n-sub" x="752" y="47" text-anchor="middle">worker · 4 vCPU · 16 Gio</text>
+          </g>
+
+          <!-- ============ TOILE DE RHUMBS ============ -->
+          <g stroke="#7A5E2A" stroke-width=".7" opacity=".30">
+            <line x1="818" y1="690" x2="2018" y2="690"/><line x1="818" y1="690" x2="1927" y2="1149"/>
+            <line x1="818" y1="690" x2="1667" y2="1539"/><line x1="818" y1="690" x2="1277" y2="1799"/>
+            <line x1="818" y1="690" x2="818" y2="1890"/><line x1="818" y1="690" x2="359" y2="1799"/>
+            <line x1="818" y1="690" x2="-31" y2="1539"/><line x1="818" y1="690" x2="-291" y2="1149"/>
+            <line x1="818" y1="690" x2="-382" y2="690"/><line x1="818" y1="690" x2="-291" y2="231"/>
+            <line x1="818" y1="690" x2="-31" y2="-159"/><line x1="818" y1="690" x2="359" y2="-419"/>
+            <line x1="818" y1="690" x2="818" y2="-510"/><line x1="818" y1="690" x2="1277" y2="-419"/>
+            <line x1="818" y1="690" x2="1667" y2="-159"/><line x1="818" y1="690" x2="1927" y2="231"/>
+          </g>
+          <g stroke="#7A5E2A" stroke-width=".6" opacity=".20">
+            <line x1="200" y1="110" x2="1400" y2="110"/><line x1="200" y1="110" x2="1309" y2="569"/>
+            <line x1="200" y1="110" x2="1049" y2="959"/><line x1="200" y1="110" x2="659" y2="1219"/>
+            <line x1="200" y1="110" x2="200" y2="1310"/><line x1="200" y1="110" x2="-259" y2="1219"/>
+            <line x1="200" y1="110" x2="-649" y2="959"/><line x1="200" y1="110" x2="-909" y2="569"/>
+            <line x1="200" y1="110" x2="-1000" y2="110"/><line x1="200" y1="110" x2="-909" y2="-349"/>
+            <line x1="200" y1="110" x2="-649" y2="-739"/><line x1="200" y1="110" x2="-259" y2="-999"/>
+            <line x1="200" y1="110" x2="200" y2="-1090"/><line x1="200" y1="110" x2="659" y2="-999"/>
+            <line x1="200" y1="110" x2="1049" y2="-739"/><line x1="200" y1="110" x2="1309" y2="-349"/>
+          </g>
+          <use href="#rose" transform="translate(200,110) scale(.45)" opacity=".55"/>
+
+          <!-- ============ ZONES DE RÉSEAU (recouvrement = multi-réseau) ============ -->
+          <g>
+            <!-- frontend -->
+            <rect x="60" y="80" width="290" height="330" rx="92" fill="#163A44" fill-opacity=".62"/>
+            <rect x="60" y="80" width="290" height="330" rx="92" fill="url(#hF)"/>
+            <rect x="60" y="80" width="290" height="330" rx="92" fill="none" stroke="#3D7D8C" stroke-width="1.4"/>
+            <rect x="66" y="86" width="278" height="318" rx="86" fill="none" stroke="#3D7D8C" stroke-width=".8" stroke-dasharray="2 7" opacity=".8"/>
+            <text class="z-label" x="80" y="112" fill="#7FBECB">frontend</text>
+            <text class="z-sub" x="80" y="127">overlay · 10.0.3.0/24 · chiffré</text>
+
+            <!-- backend -->
+            <rect x="200" y="180" width="470" height="330" rx="100" fill="#3B2E19" fill-opacity=".62"/>
+            <rect x="200" y="180" width="470" height="330" rx="100" fill="url(#hB)"/>
+            <rect x="200" y="180" width="470" height="330" rx="100" fill="none" stroke="#8A6A2E" stroke-width="1.4"/>
+            <rect x="206" y="186" width="458" height="318" rx="94" fill="none" stroke="#8A6A2E" stroke-width=".8" stroke-dasharray="2 7" opacity=".8"/>
+            <text class="z-label" x="392" y="208" fill="#D0A85E">backend</text>
+            <text class="z-sub" x="392" y="223">overlay · 10.0.9.0/24 · interne</text>
+
+            <!-- monitoring -->
+            <rect x="520" y="170" width="350" height="330" rx="100" fill="#2C3D2A" fill-opacity=".62"/>
+            <rect x="520" y="170" width="350" height="330" rx="100" fill="url(#hM)"/>
+            <rect x="520" y="170" width="350" height="330" rx="100" fill="none" stroke="#5F8A50" stroke-width="1.4"/>
+            <rect x="526" y="176" width="338" height="318" rx="94" fill="none" stroke="#5F8A50" stroke-width=".8" stroke-dasharray="2 7" opacity=".8"/>
+            <text class="z-label" x="700" y="196" fill="#93BE84">monitoring</text>
+            <text class="z-sub" x="700" y="211">overlay · 10.0.14.0/24</text>
+          </g>
+
+          <!-- ============ LIENS DE CO-RÉSEAU (fins, pointillés) ============ -->
+          <g stroke="#8C7C60" stroke-width="1" stroke-dasharray="2 5" opacity=".45" fill="none">
+            <line x1="150" y1="165" x2="255" y2="330"/>
+            <line x1="255" y1="330" x2="460" y2="430"/>
+            <line x1="255" y1="330" x2="600" y2="250"/>
+            <line x1="460" y1="430" x2="600" y2="250"/>
+            <line x1="600" y1="250" x2="760" y2="420"/>
+          </g>
+
+          <!-- ============ ARÊTES DE VOLUME (le produit) ============ -->
+          <g fill="none" stroke="#C79A46" stroke-width="2.4" opacity=".92">
+            <path d="M209,405 C186,412 168,414 152,420"/>
+            <path d="M299,405 C302,470 276,512 268,558"/>
+            <path d="M413,500 C412,524 410,540 409,558"/>
+            <path d="M760,496 C766,524 786,542 799,558"/>
+          </g>
+          <g fill="none" stroke="#14100A" stroke-width=".9" opacity=".9">
+            <path d="M209,405 C186,412 168,414 152,420"/>
+            <path d="M299,405 C302,470 276,512 268,558"/>
+            <path d="M413,500 C412,524 410,540 409,558"/>
+            <path d="M760,496 C766,524 786,542 799,558"/>
+          </g>
+
+          <!-- ============ BULLES ============ -->
+
+          <!-- ···· web ···· -->
+          <g>
+            <circle cx="145" cy="160" r="46" fill="none" stroke="#C79A46" stroke-width=".7" opacity=".16"/>
+            <circle cx="141" cy="157" r="46" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".09"/>
+            <circle cx="150" cy="165" r="46" fill="url(#gCont)" stroke="#C79A46" stroke-width="1.3" filter="url(#lift)"/>
+            <circle cx="150" cy="165" r="41" fill="none" stroke="#EADCC0" stroke-width=".5" opacity=".14"/>
+            <g transform="translate(150,141)">
+              <rect x="-21" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0" opacity=".85"/>
+              <rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45)"/>
+              <circle cx="16" r="5.5" fill="#7FA05C"/>
+            </g>
+            <text class="b-name" x="150" y="171">web</text>
+            <text class="b-id" x="150" y="186">shop_web.1</text>
+            <g class="prot net">
+              <path class="stalk" d="M193.5,150 L204,150"/>
+              <rect x="204" y="141" width="64" height="18" rx="9"/>
+              <text x="236" y="153.5">frontend</text>
+            </g>
+          </g>
+
+          <!-- ···· api (sélectionné) ···· -->
+          <g>
+            <circle cx="250" cy="325" r="54" fill="none" stroke="#C79A46" stroke-width=".7" opacity=".18"/>
+            <circle cx="245" cy="321" r="54" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".10"/>
+            <circle cx="255" cy="330" r="63" fill="none" stroke="#B0563A" stroke-width="1.1" stroke-dasharray="5 5" opacity=".9"/>
+            <circle cx="255" cy="330" r="54" fill="url(#gCont)" stroke="#B0563A" stroke-width="2" filter="url(#lift)"/>
+            <circle cx="255" cy="330" r="48" fill="none" stroke="#EADCC0" stroke-width=".5" opacity=".16"/>
+            <g transform="translate(255,300)">
+              <rect x="-29" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0" opacity=".85"/>
+              <rect x="-13" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45)"/>
+              <circle cx="8" r="5.5" fill="#7FA05C"/>
+              <path d="M19,3 L24,-3 L29,3" fill="none" stroke="#C79A46" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+            <text class="b-name" x="255" y="338">api</text>
+            <text class="b-id" x="255" y="353">shop_api.1</text>
+            <g class="prot net">
+              <path class="stalk" d="M202.8,316 L192,316"/>
+              <rect x="128" y="307" width="64" height="18" rx="9"/>
+              <text x="160" y="319.5">frontend</text>
+            </g>
+            <g class="prot net">
+              <path class="stalk" d="M307.2,316 L318,316"/>
+              <rect x="318" y="307" width="58" height="18" rx="9"/>
+              <text x="347" y="319.5">backend</text>
+            </g>
+            <g class="prot vol">
+              <path class="stalk" d="M224.6,374.6 L211,387"/>
+              <rect x="168" y="387" width="83" height="18" rx="9"/>
+              <text x="209.5" y="399.5">pgdata · rw</text>
+            </g>
+            <g class="prot vol">
+              <path class="stalk" d="M285.4,374.6 L297,387"/>
+              <rect x="258" y="387" width="83" height="18" rx="9"/>
+              <text x="299.5" y="399.5">pg-data · ro</text>
+            </g>
+          </g>
+
+          <!-- ···· pgdata ···· -->
+          <g>
+            <circle cx="116" cy="466" r="32" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".14"/>
+            <circle cx="120" cy="470" r="32" fill="url(#gVol)" stroke="#C79A46" stroke-width="1.2" filter="url(#liftS)"/>
+            <g transform="translate(120,455)">
+              <polygon points="-9,-5 -3,5 -15,5" fill="#EADCC0" opacity=".85"/>
+              <rect x="4" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45,9,0)"/>
+            </g>
+            <text class="v-name" x="120" y="476">pgdata</text>
+            <text class="v-sub" x="120" y="489">local · 4,2 Gio</text>
+            <g class="prot vol">
+              <path class="stalk" d="M120,438 L120,436"/>
+              <rect x="88" y="418" width="64" height="18" rx="9"/>
+              <text x="120" y="430.5">api · rw</text>
+            </g>
+          </g>
+
+          <!-- ···· pg-data ···· -->
+          <g>
+            <circle cx="326" cy="606" r="32" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".14"/>
+            <circle cx="330" cy="610" r="32" fill="url(#gVol)" stroke="#C79A46" stroke-width="1.2" filter="url(#liftS)"/>
+            <g transform="translate(330,595)">
+              <polygon points="-9,-5 -3,5 -15,5" fill="#EADCC0" opacity=".85"/>
+              <rect x="4" y="-5" width="10" height="10" rx="1.5" fill="#6E6353" transform="rotate(45,9,0)"/>
+            </g>
+            <text class="v-name" x="330" y="616">pg-data</text>
+            <text class="v-sub" x="330" y="629">nfs · 118 Gio</text>
+            <text class="marg" x="330" y="660" text-anchor="middle">volume partagé — à cheval sur deux nœuds</text>
+            <g class="prot vol">
+              <path class="stalk" d="M302.8,593.3 L287,576"/>
+              <rect x="228" y="558" width="64" height="18" rx="9"/>
+              <text x="260" y="570.5">api · ro</text>
+            </g>
+            <g class="prot vol">
+              <path class="stalk" d="M358.1,594.7 L374,576"/>
+              <rect x="368" y="558" width="83" height="18" rx="9"/>
+              <text x="409.5" y="570.5">worker · ro</text>
+            </g>
+          </g>
+
+          <!-- ···· worker ···· -->
+          <g>
+            <circle cx="455" cy="425" r="46" fill="none" stroke="#C79A46" stroke-width=".7" opacity=".16"/>
+            <circle cx="451" cy="422" r="46" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".09"/>
+            <circle cx="460" cy="430" r="46" fill="url(#gCont)" stroke="#C79A46" stroke-width="1.3" filter="url(#lift)"/>
+            <circle cx="460" cy="430" r="41" fill="none" stroke="#EADCC0" stroke-width=".5" opacity=".14"/>
+            <g transform="translate(460,406)">
+              <rect x="-21" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0" opacity=".85"/>
+              <rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45)"/>
+              <circle cx="16" r="5.5" fill="none" stroke="#C87F2E" stroke-width="2.6"/>
+            </g>
+            <text class="b-name" x="460" y="436">worker</text>
+            <text class="b-id" x="460" y="451">shop_worker.1</text>
+            <g class="prot net">
+              <path class="stalk" d="M502.3,412 L512,412"/>
+              <rect x="512" y="403" width="58" height="18" rx="9"/>
+              <text x="541" y="415.5">backend</text>
+            </g>
+            <g class="prot vol">
+              <path class="stalk" d="M429.1,464.2 L420,482"/>
+              <rect x="372" y="482" width="83" height="18" rx="9"/>
+              <text x="413.5" y="494.5">pg-data · ro</text>
+            </g>
+          </g>
+
+          <!-- ···· prometheus ···· -->
+          <g>
+            <circle cx="595" cy="245" r="48" fill="none" stroke="#C79A46" stroke-width=".7" opacity=".16"/>
+            <circle cx="591" cy="242" r="48" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".09"/>
+            <circle cx="600" cy="250" r="48" fill="url(#gCont)" stroke="#C79A46" stroke-width="1.3" filter="url(#lift)"/>
+            <circle cx="600" cy="250" r="43" fill="none" stroke="#EADCC0" stroke-width=".5" opacity=".14"/>
+            <g transform="translate(600,224)">
+              <rect x="-21" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0" opacity=".85"/>
+              <rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#6E9E8C" transform="rotate(45)"/>
+              <circle cx="16" r="5.5" fill="#7FA05C"/>
+            </g>
+            <text class="b-name" x="600" y="256">prometheus</text>
+            <text class="b-id" x="600" y="271">obs_prometheus.1</text>
+            <g class="prot net">
+              <path class="stalk" d="M554.1,236 L544,236"/>
+              <rect x="486" y="227" width="58" height="18" rx="9"/>
+              <text x="515" y="239.5">backend</text>
+            </g>
+            <g class="prot net">
+              <path class="stalk" d="M645.9,236 L656,236"/>
+              <rect x="656" y="227" width="77" height="18" rx="9"/>
+              <text x="694.5" y="239.5">monitoring</text>
+            </g>
+          </g>
+
+          <!-- ···· grafana ···· -->
+          <g>
+            <circle cx="755" cy="415" r="46" fill="none" stroke="#C79A46" stroke-width=".7" opacity=".16"/>
+            <circle cx="751" cy="412" r="46" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".09"/>
+            <circle cx="760" cy="420" r="46" fill="url(#gCont)" stroke="#C79A46" stroke-width="1.3" filter="url(#lift)"/>
+            <circle cx="760" cy="420" r="41" fill="none" stroke="#EADCC0" stroke-width=".5" opacity=".14"/>
+            <g transform="translate(760,396)">
+              <rect x="-29" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0" opacity=".85"/>
+              <rect x="-13" y="-5" width="10" height="10" rx="1.5" fill="#6E9E8C" transform="rotate(45)"/>
+              <circle cx="8" r="5.5" fill="#7FA05C"/>
+              <path d="M19,3 L24,-3 L29,3" fill="none" stroke="#C79A46" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+            <text class="b-name" x="760" y="426">grafana</text>
+            <text class="b-id" x="760" y="441">obs_grafana.1</text>
+            <g class="prot net">
+              <path class="stalk" d="M716.9,404 L707,404"/>
+              <rect x="630" y="395" width="77" height="18" rx="9"/>
+              <text x="668.5" y="407.5">monitoring</text>
+            </g>
+            <g class="prot vol">
+              <path class="stalk" d="M760,466 L760,478"/>
+              <rect x="698" y="478" width="124" height="18" rx="9"/>
+              <text x="760" y="490.5">grafana-store · rw</text>
+            </g>
+          </g>
+
+          <!-- ···· grafana-store ···· -->
+          <g>
+            <circle cx="796" cy="606" r="32" fill="none" stroke="#C79A46" stroke-width=".6" opacity=".14"/>
+            <circle cx="800" cy="610" r="32" fill="url(#gVol)" stroke="#C79A46" stroke-width="1.2" filter="url(#liftS)"/>
+            <g transform="translate(800,595)">
+              <polygon points="-9,-5 -3,5 -15,5" fill="#EADCC0" opacity=".85"/>
+              <rect x="4" y="-5" width="10" height="10" rx="1.5" fill="#6E9E8C" transform="rotate(45,9,0)"/>
+            </g>
+            <text class="v-name" x="800" y="616">grafana-store</text>
+            <text class="v-sub" x="800" y="629">local · 820 Mio</text>
+            <g class="prot vol">
+              <path class="stalk" d="M800,578 L800,576"/>
+              <rect x="755" y="558" width="90" height="18" rx="9"/>
+              <text x="800" y="570.5">grafana · rw</text>
+            </g>
+          </g>
+
+          <!-- ···· ORPHELIN : état montré ···· -->
+          <g>
+            <circle cx="560" cy="660" r="52" fill="none" stroke="#B0563A" stroke-width=".9" stroke-dasharray="2 6" opacity=".75"/>
+            <circle cx="560" cy="660" r="62" fill="none" stroke="#B0563A" stroke-width=".6" stroke-dasharray="1 8" opacity=".45"/>
+            <circle cx="556" cy="657" r="34" fill="none" stroke="#8C7C60" stroke-width=".6" opacity=".12"/>
+            <circle cx="560" cy="660" r="34" fill="url(#gOrph)" stroke="#8C7C60" stroke-width="1.2" stroke-dasharray="6 4" filter="url(#liftS)"/>
+            <g transform="translate(560,643)">
+              <rect x="-13" y="-5" width="10" height="10" rx="1.5" fill="#8C7C60"/>
+              <rect x="3" y="-5" width="10" height="10" rx="1.5" fill="none" stroke="#6E6353" stroke-width="1.4" transform="rotate(45,8,0)"/>
+              <circle cx="24" r="5.5" fill="none" stroke="#6E6558" stroke-width="2.2"/>
+              <line x1="20" y1="4" x2="28" y2="-4" stroke="#6E6558" stroke-width="1.6"/>
+            </g>
+            <text class="b-name" x="560" y="666" fill="#C3B190">adminer-tmp</text>
+            <text class="b-id" x="560" y="680">arrêté · 12 j</text>
+            <text class="marg" x="560" y="726" text-anchor="middle" fill="#B0563A">ORPHELIN — AUCUNE EXCROISSANCE : NI RÉSEAU, NI VOLUME</text>
+          </g>
+
+          <!-- ============ ROSE DES VENTS PRINCIPALE + ÉCHELLE ============ -->
+          <use href="#rose" transform="translate(818,690)"/>
+          <g>
+            <line x1="30" y1="726" x2="150" y2="726" stroke="#7A5E2A" stroke-width="1.4"/>
+            <line x1="30" y1="721" x2="30" y2="731" stroke="#7A5E2A" stroke-width="1.4"/>
+            <line x1="90" y1="722" x2="90" y2="730" stroke="#7A5E2A" stroke-width="1"/>
+            <line x1="150" y1="721" x2="150" y2="731" stroke="#7A5E2A" stroke-width="1.4"/>
+            <text class="marg" x="30" y="744">SANS ÉCHELLE — LA DISTANCE NE SIGNIFIE RIEN</text>
+          </g>
+
+          <!-- grain -->
+          <rect width="884" height="760" filter="url(#grain)" opacity=".075" style="mix-blend-mode:overlay"/>
+        </svg>
+
+        <!-- ============ LÉGENDE : CARTOUCHE DE MARGE ============ -->
+        <div class="legend">
+          <div class="lg">
+            <h3>Forme = type d'objet</h3>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0"/></svg> Carré — conteneur</div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><polygon points="0,-6 6,5 -6,5" fill="#EADCC0"/></svg> Triangle — volume</div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><polygon points="6,0 3,5.2 -3,5.2 -6,0 -3,-5.2 3,-5.2" fill="none" stroke="#3D7D8C" stroke-width="1.6"/></svg> Hexagone — réseau</div>
+          </div>
+          <div class="lg">
+            <h3>Losange = stack</h3>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45)"/></svg> Ambre — <code>shop</code></div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#6E9E8C" transform="rotate(45)"/></svg> Vert-de-gris — <code>obs</code></div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="none" stroke="#6E6353" stroke-width="1.5" transform="rotate(45)"/></svg> Creux gris — hors stack</div>
+          </div>
+          <div class="lg">
+            <h3>Cercle = état · chevron = port</h3>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><circle r="5.5" fill="#7FA05C"/></svg> Plein — en marche</div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><circle r="5" fill="none" stroke="#C87F2E" stroke-width="2.6"/></svg> Anneau — redémarrages récents</div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><circle r="5" fill="none" stroke="#6E6558" stroke-width="2"/><line x1="-4" y1="4" x2="4" y2="-4" stroke="#6E6558" stroke-width="1.6"/></svg> Barré — arrêté</div>
+            <div class="li"><svg width="16" height="16" viewBox="-8 -8 16 16"><path d="M-5,3 L0,-3 L5,3" fill="none" stroke="#C79A46" stroke-width="2.4" stroke-linecap="round"/></svg> Chevron — port publié</div>
+          </div>
+          <div class="lg">
+            <h3>Zones — hachure de côte</h3>
+            <div class="li"><svg width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" rx="5" fill="#163A44" stroke="#3D7D8C"/></svg> <code>frontend</code> 10.0.3.0/24</div>
+            <div class="li"><svg width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" rx="5" fill="#3B2E19" stroke="#8A6A2E"/></svg> <code>backend</code> 10.0.9.0/24</div>
+            <div class="li"><svg width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" rx="5" fill="#2C3D2A" stroke="#5F8A50"/></svg> <code>monitoring</code> 10.0.14.0/24</div>
+            <p style="margin-top:6px">Recouvrement de deux zones = objet multi-réseau.</p>
+          </div>
+          <div class="lg">
+            <h3>Excroissances</h3>
+            <p>Chaque point de raccord porte une étiquette : <b style="color:var(--d-vellum)">le nom exact</b> de l'objet relié, suivi du mode de montage.</p>
+            <div class="specimen">pgdata <span>·</span> pg-data <span>·</span> pg_data</div>
+            <p style="margin-top:5px">Chasse fixe obligatoire : trait d'union, blanc souligné et tiret bas restent distincts à 10 px.</p>
+          </div>
+          <div class="lg">
+            <h3>Marginalia</h3>
+            <p>La carte n'a pas d'échelle : la distance entre deux bulles ne mesure rien.</p>
+            <p style="margin-top:5px">Les bulles dérivent et respirent en continu ; les auréoles fines montrent le sillage de la dérive.</p>
+            <p style="margin-top:5px">La rose des vents n'oriente rien — elle date la carte, pas le cluster.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ················ panneau de détail ················ -->
+      <aside class="panel">
+        <div class="ph">
+          <span class="close">✕</span>
+          <div class="oid">shop_api.1</div>
+          <div class="sub">conteneur · stack <b style="color:var(--d-stack-shop)">shop</b> · node-01 · sélectionné</div>
+          <div class="pastilles">
+            <svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#EADCC0"/></svg>
+            <svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" rx="1.5" fill="#D9963F" transform="rotate(45)"/></svg>
+            <svg width="16" height="16" viewBox="-8 -8 16 16"><circle r="5.5" fill="#7FA05C"/></svg>
+            <svg width="16" height="16" viewBox="-8 -8 16 16"><path d="M-5,3 L0,-3 L5,3" fill="none" stroke="#C79A46" stroke-width="2.4" stroke-linecap="round"/></svg>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--d-vellum-3);margin-left:2px">conteneur · shop · en marche · port publié</span>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h4>Identité</h4>
+          <div class="kv"><span class="k">Image</span><span class="v">ghcr.io/portolan/shop-api:2.14.3</span></div>
+          <div class="kv"><span class="k">Digest</span><span class="v">sha256:9c41e0…7ab2</span></div>
+          <div class="kv"><span class="k">ID</span><span class="v">7f3c1a9e0b42</span></div>
+          <div class="kv"><span class="k">Créé le</span><span class="v">2026-09-04 08:12 UTC</span></div>
+          <div class="kv"><span class="k">État</span><span class="v">running <i>· depuis 6 j 04 h</i></span></div>
+        </div>
+
+        <div class="sec">
+          <h4>Réseaux <s>2</s></h4>
+          <div class="kv"><span class="k">frontend</span><span class="v">10.0.3.14/24 <i>· alias api, shop_api</i></span></div>
+          <div class="kv"><span class="k">backend</span><span class="v">10.0.9.22/24 <i>· alias api</i></span></div>
+        </div>
+
+        <div class="sec">
+          <h4>Montages <s>2 volumes distincts</s></h4>
+          <div class="mount"><span class="nm">pgdata</span><span class="path">/var/lib/postgresql/data</span><span class="fl">RW · LOCAL</span></div>
+          <div class="mount"><span class="nm">pg-data</span><span class="path">/srv/backup/pg</span><span class="fl">RO · NFS</span></div>
+        </div>
+
+        <div class="sec">
+          <h4>Ports</h4>
+          <div class="kv"><span class="k">Publié</span><span class="v">8080/tcp → 30080 <i>· ingress</i></span></div>
+        </div>
+
+        <div class="sec">
+          <h4>Placement</h4>
+          <div class="kv"><span class="k">Contrainte</span><span class="v">node.role == worker</span></div>
+          <div class="kv"><span class="k">Nœud</span><span class="v">node-01 <i>· 10.10.0.11</i></span></div>
+        </div>
+
+        <div class="sec">
+          <h4>Voisinage</h4>
+          <div class="kv"><span class="k">Relié à</span><span class="v">2 réseaux · 2 volumes · 3 conteneurs co-réseau</span></div>
+        </div>
+
+        <p class="foot">Portolan affiche l'état observé du cluster. Aucun seuil, aucune règle, aucun verdict — la lecture reste à vous.</p>
+      </aside>
+    </div>
+
+    <!-- ················ onglets ················ -->
+    <nav class="tabs">
+      <div class="tab on"><span class="g">◎</span> Vue d'ensemble</div>
+      <div class="tab"><span class="g">▤</span> Vue nœuds</div>
+      <div class="tab"><span class="g">◈</span> Vue service</div>
+      <div class="meta"><span>relevé 2026-09-10 09:41 UTC</span><span>docker.sock · lecture seule</span></div>
+    </nav>
+
+  </div>
+  </div>
+
+  <p class="caption"><b>État montré :</b> le conteneur orphelin <code style="font-family:var(--mono)">adminer-tmp</code>, en bas de carte — aucune zone ne l'enveloppe, aucune excroissance ne pend de sa bulle. Son isolement <i>est</i> le signal ; Portolan ne le commente pas.</p>
+
+  <!-- =========================== MODE CLAIR =========================== -->
+  <div class="lightstrip">
+    <div class="lh">Mode clair — encre sur parchemin · même encodage forme + couleur</div>
+    <div class="lightbody">
+      <div class="swatches">
+        <h5>Valeurs à reprendre — nuit / jour</h5>
+        <div class="sw-row"><i style="background:#14100B"></i><b>fond</b> #14100B → <i style="background:#EFE4C8"></i> #EFE4C8</div>
+        <div class="sw-row"><i style="background:#EADCC0"></i><b>encre</b> #EADCC0 → <i style="background:#2B2117"></i> #2B2117</div>
+        <div class="sw-row"><i style="background:#C79A46"></i><b>laiton</b> #C79A46 → <i style="background:#8C6A22"></i> #8C6A22</div>
+        <div class="sw-row"><i style="background:#163A44"></i><b>frontend</b> #163A44 → <i style="background:#BFD8DC"></i> #BFD8DC</div>
+        <div class="sw-row"><i style="background:#3B2E19"></i><b>backend</b> #3B2E19 → <i style="background:#E2D2A6"></i> #E2D2A6</div>
+        <div class="sw-row"><i style="background:#2C3D2A"></i><b>monitoring</b> #2C3D2A → <i style="background:#CBDBBE"></i> #CBDBBE</div>
+        <div class="sw-row"><i style="background:#D9963F"></i><b>shop</b> #D9963F · <i style="background:#6E9E8C"></i><b>obs</b> #6E9E8C</div>
+        <div class="sw-row"><i style="background:#7FA05C"></i><b>marche</b> #7FA05C · <i style="background:#C87F2E"></i><b>redém.</b> #C87F2E</div>
+      </div>
+      <div class="mini">
+        <svg viewBox="0 0 600 168" width="100%" height="168" role="img" aria-label="Aperçu du mode clair : bulle api dans la zone frontend, reliée au volume pg-data.">
+          <rect width="600" height="168" fill="#EFE4C8"/>
+          <g stroke="#B79C60" stroke-width=".6" opacity=".5">
+            <line x1="520" y1="30" x2="-100" y2="230"/><line x1="520" y1="30" x2="-40" y2="330"/>
+            <line x1="520" y1="30" x2="120" y2="400"/><line x1="520" y1="30" x2="520" y2="400"/>
+          </g>
+          <rect x="24" y="24" width="270" height="124" rx="52" fill="#BFD8DC" stroke="#4E8B99" stroke-width="1.3"/>
+          <rect x="30" y="30" width="258" height="112" rx="46" fill="none" stroke="#4E8B99" stroke-width=".7" stroke-dasharray="2 7"/>
+          <text x="42" y="46" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;letter-spacing:.18em;fill:#3C6E7A">FRONTEND · 10.0.3.0/24</text>
+          <circle cx="118" cy="92" r="38" fill="#E5D7B5" stroke="#8C6A22" stroke-width="1.4"/>
+          <g transform="translate(118,72)">
+            <rect x="-19" y="-4.5" width="9" height="9" rx="1.5" fill="#2B2117"/>
+            <rect x="-4.5" y="-4.5" width="9" height="9" rx="1.5" fill="#C97F1F" transform="rotate(45)"/>
+            <circle cx="15" r="5" fill="#4E7A3A"/>
+          </g>
+          <text x="118" y="98" style="font-family:Georgia,serif;font-size:13px;font-weight:600;fill:#2B2117" text-anchor="middle">api</text>
+          <text x="118" y="112" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;fill:#6B5B44" text-anchor="middle">shop_api.1</text>
+          <path d="M156,80 L168,80" stroke="#8C6A22" stroke-width="1.5"/>
+          <rect x="168" y="71" width="58" height="18" rx="9" fill="#E9DCC0" stroke="#8C6A22"/>
+          <text x="197" y="83.5" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;fill:#2B2117" text-anchor="middle">backend</text>
+          <path d="M143,120 L155,131" stroke="#8C6A22" stroke-width="1.5"/>
+          <rect x="146" y="131" width="83" height="18" rx="9" fill="#F3E9D2" stroke="#8C6A22"/>
+          <text x="187.5" y="143.5" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;fill:#2B2117" text-anchor="middle">pg-data · ro</text>
+          <path d="M229,140 C300,140 330,120 372,104" fill="none" stroke="#8C6A22" stroke-width="2.2"/>
+          <circle cx="410" cy="96" r="30" fill="#E5D7B5" stroke="#8C6A22" stroke-width="1.2"/>
+          <g transform="translate(410,82)"><polygon points="-9,-5 -3,5 -15,5" fill="#2B2117"/><rect x="4" y="-5" width="9" height="9" rx="1.5" fill="#6B6353" transform="rotate(45,8.5,0)"/></g>
+          <text x="410" y="102" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#2B2117" text-anchor="middle">pg-data</text>
+          <text x="410" y="114" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8.5px;fill:#6B5B44" text-anchor="middle">nfs · 118 Gio</text>
+          <path d="M410,66 L410,64" stroke="#8C6A22" stroke-width="1.5"/>
+          <rect x="378" y="46" width="64" height="18" rx="9" fill="#F3E9D2" stroke="#8C6A22"/>
+          <text x="410" y="58.5" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;fill:#2B2117" text-anchor="middle">api · ro</text>
+          <g transform="translate(520,110) scale(.55)">
+            <polygon points="0,-44 6.5,-15.7 31.1,-31.1 15.7,-6.5 44,0 15.7,6.5 31.1,31.1 6.5,15.7 0,44 -6.5,15.7 -31.1,31.1 -15.7,6.5 -44,0 -15.7,-6.5 -31.1,-31.1 -6.5,-15.7"
+                     fill="#E9DCC0" stroke="#8C6A22" stroke-width="1.4"/>
+            <circle r="46" fill="none" stroke="#B79C60" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

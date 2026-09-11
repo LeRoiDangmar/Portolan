@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portolan — Direction 4 : Cartographie éditoriale</title>
+<style>
+/* =====================================================================
+   PORTOLAN — DIRECTION 4 « CARTOGRAPHIE ÉDITORIALE »
+   Le vocabulaire de la carte à l'échelle de l'affiche : aplats saturés,
+   contrastes francs, typographie large et sûre, beaucoup de vide.
+   Palette complète — valeurs à reprendre telles quelles.
+
+   FONDS / SURFACES
+   --e-ground   #14161C   fond application
+   --e-panel    #1B1E26   panneaux latéraux
+   --e-panel-2  #232733   champs, puces
+   --e-canvas   #0F1117   fond de carte
+   --e-rule     #2C313D   filets
+
+   TEXTE
+   --e-ink      #F7F4ED   texte principal (blanc cassé)
+   --e-ink-2    #A9A79F   texte secondaire
+   --e-ink-3    #6E7078   texte tertiaire
+
+   ZONES DE RÉSEAU — aplats saturés, trait 3 px
+   frontend    fond #17284F  trait #4C8DFF  titre #8FB8FF   10.0.3.0/24
+   backend     fond #3A1E17  trait #FF6B4A  titre #FF9C7C   10.0.9.0/24
+   monitoring  fond #3A2E10  trait #FFC94D  titre #FFDC8A   10.0.14.0/24
+
+   VOLUMES — famille violette
+   --e-vol      #9B7BFF   trait, arêtes, étiquettes de montage
+   --e-vol-bg   #241C3D   corps de bulle
+
+   PASTILLES — STACK (losange)
+   --e-stack-shop  #F25C8A   rose   = stack shop
+   --e-stack-obs   #16C7B0   turquoise = stack obs
+   --e-stack-none  #7B808C   gris   = hors stack
+
+   PASTILLES — ÉTAT (cercle)
+   --e-state-run     #3ED598
+   --e-state-restart #FFA53C
+   --e-state-stop    #7B808C
+
+   SÉLECTION
+   --e-sel      #FFFFFF   anneau blanc + halo
+   ESTOMPAGE HORS SÉLECTION : opacity .16
+
+   MODE CLAIR (affiche imprimée)
+   --le-ground #FAF7F0  --le-ink #16181D  --le-front #DCE6FF/#1B4FD8
+   --le-back   #FFE0D6/#E0421C  --le-mon #FFEFC7/#C08A00  --le-vol #EDE6FF/#6B45E0
+   ===================================================================== */
+
+:root{
+  --e-ground:#14161C; --e-panel:#1B1E26; --e-panel-2:#232733; --e-canvas:#0F1117; --e-rule:#2C313D;
+  --e-ink:#F7F4ED; --e-ink-2:#A9A79F; --e-ink-3:#6E7078;
+  --e-vol:#9B7BFF;
+  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  --sans: "Avenir Next", Avenir, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#0A0B0E;color:var(--e-ink);font-family:var(--sans)}
+
+.doc{max-width:1560px;margin:0 auto;padding:44px 32px 76px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#FFC94D;margin:0 0 14px}
+h1{font-size:44px;font-weight:800;letter-spacing:-.025em;line-height:1.05;margin:0 0 16px}
+h1 small{display:block;font-size:13px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--e-ink-3);font-family:var(--mono);margin-top:12px}
+.rationale{max-width:74ch;font-size:17px;line-height:1.65;color:var(--e-ink-2);margin:0}
+.rationale em{color:var(--e-ink);font-style:normal;font-weight:700}
+.hr{height:4px;background:linear-gradient(90deg,#4C8DFF 0 33%,#FF6B4A 33% 66%,#FFC94D 66% 100%);margin:30px 0 26px;border-radius:2px;max-width:420px}
+
+.hero{overflow-x:auto;padding-bottom:8px}
+.frame{width:1440px;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px rgba(0,0,0,.7);background:var(--e-ground)}
+.titlebar{height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;background:#1B1E26}
+.dot{width:11px;height:11px;border-radius:50%}
+.url{flex:1;height:26px;border-radius:13px;background:#0F1117;display:flex;align-items:center;padding:0 14px;
+  font-family:var(--mono);font-size:11.5px;color:var(--e-ink-3);gap:8px}
+.url b{color:var(--e-ink-2);font-weight:500}
+.airgap{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#3ED598;background:rgba(62,213,152,.12);border-radius:11px;padding:4px 10px}
+
+.app{display:flex;height:936px;background:var(--e-canvas)}
+
+.side{width:236px;flex:0 0 236px;background:var(--e-panel);padding:18px 16px 0}
+.side h2{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--e-ink-3);margin:22px 0 10px}
+.side h2:first-child{margin-top:0}
+.search{height:34px;background:var(--e-panel-2);border-radius:17px;display:flex;align-items:center;padding:0 14px;
+  font-size:13px;color:var(--e-ink-3);gap:8px}
+.row{display:flex;align-items:center;gap:10px;padding:6px 2px;font-size:14px;font-weight:600;color:var(--e-ink-2)}
+.row .sw{width:14px;height:14px;flex:0 0 14px;border-radius:4px}
+.row .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--e-ink-3)}
+.row .tg{margin-left:auto;width:30px;height:17px;border-radius:9px;background:#3A404E;position:relative;flex:0 0 30px}
+.row .tg::after{content:"";position:absolute;top:2.5px;left:2.5px;width:12px;height:12px;border-radius:50%;background:#8C919B}
+.row.on .tg{background:#3ED598}
+.row.on .tg::after{left:15.5px;background:#0F1117}
+.row.on{color:var(--e-ink)}
+.side .note{font-size:11.5px;line-height:1.6;color:var(--e-ink-3);margin-top:20px;padding-top:14px;border-top:1px solid var(--e-rule)}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.toolbar{height:44px;display:flex;align-items:center;gap:18px;padding:0 20px;background:#171A21;font-size:12.5px;color:var(--e-ink-3)}
+.toolbar b{color:var(--e-ink);font-weight:700}
+.toolbar .right{margin-left:auto;display:flex;gap:14px;align-items:center}
+.chip{background:#FFFFFF;color:#0F1117;border-radius:12px;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:.04em}
+.map{display:block;width:884px;height:760px;background:var(--e-canvas)}
+
+.legend{height:132px;background:#131620;display:flex;padding:16px 20px 0;gap:24px}
+.lg{flex:1;min-width:0}
+.lg h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--e-ink-3);margin:0 0 12px}
+.li{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12.5px;font-weight:600;color:var(--e-ink-2)}
+.li svg{flex:0 0 20px}
+.li code{font-family:var(--mono);font-size:12px;color:var(--e-ink);font-weight:400}
+.lg p{margin:0;font-size:11.5px;line-height:1.5;color:var(--e-ink-3)}
+.specimen{font-family:var(--mono);font-size:16px;color:var(--e-ink);margin:6px 0}
+.specimen span{color:#9B7BFF}
+
+.panel{width:320px;flex:0 0 320px;background:var(--e-panel)}
+.panel .ph{padding:20px 20px 18px}
+.panel .ph .close{float:right;font-size:15px;color:var(--e-ink-3)}
+.panel .ph .oid{font-family:var(--mono);font-size:20px;color:var(--e-ink);letter-spacing:-.02em}
+.panel .ph .sub{font-size:12px;color:var(--e-ink-3);margin-top:6px;font-weight:600}
+.panel .ph .pastilles{margin-top:14px;display:flex;gap:8px;align-items:center}
+.sec{padding:14px 20px 6px}
+.sec h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--e-ink-3);margin:0 0 10px}
+.kv{display:flex;gap:10px;margin-bottom:8px;line-height:1.45}
+.kv .k{width:66px;flex:0 0 66px;color:var(--e-ink-3);font-size:11px;font-weight:600;padding-top:2px}
+.kv .v{font-family:var(--mono);font-size:12px;color:var(--e-ink);word-break:break-all}
+.kv .v i{font-style:normal;color:var(--e-ink-3)}
+.mount{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;margin-bottom:8px}
+.mount .nm{color:#0F1117;background:#9B7BFF;border-radius:11px;padding:3px 10px;font-weight:600}
+.mount .path{color:var(--e-ink-2);font-size:11px}
+.mount .fl{margin-left:auto;color:#9B7BFF;font-size:10px;font-weight:700;letter-spacing:.08em}
+.panel .foot{margin:14px 20px 18px;padding-top:14px;border-top:1px solid var(--e-rule);font-size:11.5px;line-height:1.55;color:var(--e-ink-3)}
+
+.tabs{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px;background:#1B1E26}
+.tab{display:flex;align-items:center;gap:10px;padding:10px 22px;border-radius:22px;font-size:15px;font-weight:600;color:var(--e-ink-3)}
+.tab.on{background:var(--e-ink);color:#0F1117;font-weight:700}
+.tabs .meta{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--e-ink-3);display:flex;gap:18px}
+
+.lightstrip{margin-top:38px;border-radius:14px;overflow:hidden;max-width:1440px}
+.lightstrip .lh{padding:14px 20px;background:#1B1E26;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--e-ink-3)}
+.lightbody{display:flex;background:#FAF7F0;color:#16181D}
+.swatches{width:430px;flex:0 0 430px;padding:20px 22px;border-right:1px solid #E4DDD0}
+.swatches h5{margin:0 0 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#8A857A}
+.sw-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:#4A473F}
+.sw-row i{width:30px;height:16px;border-radius:4px;flex:0 0 30px;display:block}
+.sw-row b{font-weight:400;color:#16181D;width:76px;display:inline-block}
+.mini{flex:1;padding:12px 16px}
+.caption{font-size:13px;color:var(--e-ink-3);margin-top:16px;max-width:96ch;line-height:1.65}
+.caption b{color:var(--e-ink-2)}
+.caption code{font-family:var(--mono);color:var(--e-ink-2)}
+
+/* SVG */
+.z-label{font-family:var(--sans);font-size:22px;font-weight:800;letter-spacing:.02em}
+.z-sub{font-family:var(--mono);font-size:10px;letter-spacing:.1em}
+.n-label{font-family:var(--sans);font-size:15px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;fill:#3B404C}
+.b-name{font-family:var(--sans);font-size:20px;font-weight:800;fill:#F7F4ED;text-anchor:middle;letter-spacing:-.02em}
+.b-id{font-family:var(--mono);font-size:10.5px;fill:#9C9EA8;text-anchor:middle}
+.v-name{font-family:var(--mono);font-size:13px;font-weight:600;fill:#F1ECFF;text-anchor:middle}
+.v-sub{font-family:var(--mono);font-size:9.5px;fill:#9B93B8;text-anchor:middle}
+.prot rect{fill:#0F1117;stroke-width:2}
+.prot text{font-family:var(--mono);font-size:11px;text-anchor:middle;fill:#F7F4ED}
+.prot .stalk{stroke-width:2.4;fill:none;stroke-linecap:round}
+.prot.f rect,.prot.f .stalk{stroke:#4C8DFF}
+.prot.b rect,.prot.b .stalk{stroke:#FF6B4A}
+.prot.m rect,.prot.m .stalk{stroke:#FFC94D}
+.prot.v rect,.prot.v .stalk{stroke:#9B7BFF}
+.marg{font-family:var(--mono);font-size:10px;letter-spacing:.16em;fill:#565A66}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <p class="kicker">Portolan · Directions visuelles · 10 septembre 2026</p>
+  <h1>Direction 4 — Cartographie éditoriale<small>Personnalité : la carte imprimée pour être regardée</small></h1>
+  <p class="rationale">
+    Cette direction prend le vocabulaire de la carte et le passe à l'échelle de l'affiche : aplats saturés, traits de 3 px, titres de zone en 22 px, et surtout beaucoup de vide autour des objets.
+    Tout ce qui n'est pas porteur d'information a été retiré — pas de semis, pas de grain, pas de graduation — pour que <em>les excroissances et les arêtes soient les seules choses qui parlent</em>.
+    C'est la moins dense et la plus immédiatement lisible des quatre : celle qu'on montre à quelqu'un qui ne connaît pas le cluster, et celle dont on fait une capture d'écran.
+  </p>
+
+  <div class="hr"></div>
+
+  <div class="hero">
+  <div class="frame">
+
+    <div class="titlebar">
+      <span class="dot" style="background:#FF6B4A"></span>
+      <span class="dot" style="background:#FFC94D"></span>
+      <span class="dot" style="background:#3ED598"></span>
+      <div class="url"><b>portolan.node-01.internal</b>/vue-ensemble</div>
+      <span class="airgap">HORS LIGNE · 0 REQUÊTE EXTERNE</span>
+    </div>
+
+    <div class="app">
+
+      <aside class="side">
+        <div class="search"><span style="color:#565A66">⌕</span> Rechercher…</div>
+
+        <h2>Réseaux</h2>
+        <div class="row on"><span class="sw" style="background:#4C8DFF"></span> frontend <span class="cnt">2</span></div>
+        <div class="row on"><span class="sw" style="background:#FF6B4A"></span> backend <span class="cnt">3</span></div>
+        <div class="row on"><span class="sw" style="background:#FFC94D"></span> monitoring <span class="cnt">2</span></div>
+
+        <h2>Stacks</h2>
+        <div class="row on"><span class="sw" style="background:#F25C8A;border-radius:3px;transform:rotate(45deg)"></span> shop <span class="cnt">3</span></div>
+        <div class="row on"><span class="sw" style="background:#16C7B0;border-radius:3px;transform:rotate(45deg)"></span> obs <span class="cnt">2</span></div>
+        <div class="row on"><span class="sw" style="background:#7B808C;border-radius:3px;transform:rotate(45deg)"></span> hors stack <span class="cnt">1</span></div>
+
+        <h2>Nœuds</h2>
+        <div class="row on"><span class="sw" style="background:#3B404C"></span> node-01 <span class="cnt">3</span></div>
+        <div class="row on"><span class="sw" style="background:#3B404C"></span> node-02 <span class="cnt">3</span></div>
+        <div class="row on"><span class="sw" style="background:#3B404C"></span> node-03 <span class="cnt">2</span></div>
+
+        <h2>Affichage</h2>
+        <div class="row on">Zones de réseau <span class="tg"></span></div>
+        <div class="row on">Étiquettes de raccord <span class="tg"></span></div>
+        <div class="row on">Volumes <span class="tg"></span></div>
+        <div class="row on">Liens de co-réseau <span class="tg"></span></div>
+        <div class="row on">Fond des nœuds <span class="tg"></span></div>
+        <div class="row on">Estomper hors sélection <span class="tg"></span></div>
+        <div class="row on">Dérive des bulles <span class="tg"></span></div>
+        <div class="row">Mode clair <span class="tg"></span></div>
+
+        <p class="note">Lecture seule. Portolan lit le socket Docker et n'écrit jamais dans le cluster.</p>
+      </aside>
+
+      <div class="main">
+        <div class="toolbar">
+          <span><b>prod-swarm</b></span>
+          <span>6 conteneurs · 3 réseaux · 3 volumes · 3 nœuds</span>
+          <span class="right">
+            <span class="chip">ÉTAT : SÉLECTION — VOISINAGE ÉCLAIRÉ</span>
+            <span>il y a 4 s</span>
+          </span>
+        </div>
+
+        <svg class="map" viewBox="0 0 884 760" role="img"
+             aria-label="Vue d'ensemble à l'échelle de l'affiche : shop_api.1 sélectionné, son voisinage éclairé, le reste du cluster estompé.">
+          <defs>
+            <filter id="lift" x="-70%" y="-70%" width="240%" height="240%">
+              <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".6"/></filter>
+            <filter id="liftS" x="-70%" y="-70%" width="240%" height="240%">
+              <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity=".55"/></filter>
+            <filter id="drift" x="-70%" y="-70%" width="240%" height="240%">
+              <feGaussianBlur stdDeviation="7"/></filter>
+            <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="14"/></filter>
+            <radialGradient id="gCont" cx="36%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#2B3040"/><stop offset="100%" stop-color="#171A22"/></radialGradient>
+            <radialGradient id="gSel" cx="36%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#3B4257"/><stop offset="100%" stop-color="#1B1F2B"/></radialGradient>
+            <radialGradient id="gVol" cx="36%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#2E2450"/><stop offset="100%" stop-color="#1A1430"/></radialGradient>
+          </defs>
+
+          <rect width="884" height="760" fill="#0F1117"/>
+
+          <!-- ===== FOND : NŒUDS ===== -->
+          <g>
+            <rect x="0" y="0" width="330" height="760" fill="#141822"/>
+            <rect x="330" y="0" width="290" height="760" fill="#101319"/>
+            <rect x="620" y="0" width="264" height="760" fill="#141822"/>
+            <text class="n-label" x="165" y="40" text-anchor="middle">node-01</text>
+            <text class="n-label" x="475" y="40" text-anchor="middle">node-02</text>
+            <text class="n-label" x="752" y="40" text-anchor="middle">node-03</text>
+          </g>
+
+          <!-- =========================================================
+               ESTOMPÉ — hors du voisinage de la sélection (.16)
+               ========================================================= -->
+          <g opacity=".16">
+            <rect x="520" y="170" width="350" height="330" rx="100" fill="#3A2E10"/>
+            <rect x="520" y="170" width="350" height="330" rx="100" fill="none" stroke="#FFC94D" stroke-width="3"/>
+            <text class="z-label" x="700" y="206" fill="#FFDC8A">monitoring</text>
+            <text class="z-sub" x="700" y="224" fill="#C9A85E">10.0.14.0/24</text>
+
+            <line x1="600" y1="250" x2="760" y2="420" stroke="#4A4F5C" stroke-width="2.5"/>
+
+            <circle cx="760" cy="420" r="46" fill="url(#gCont)" stroke="#5A6070" stroke-width="2.5"/>
+            <g transform="translate(760,392)">
+              <rect x="-32" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/>
+              <rect x="-14" y="-6" width="12" height="12" rx="2" fill="#16C7B0" transform="rotate(45)"/>
+              <circle cx="9" r="6.5" fill="#3ED598"/>
+              <path d="M22,4 L28,-4 L34,4" fill="none" stroke="#FFC94D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <text class="b-name" x="760" y="428">grafana</text>
+            <text class="b-id" x="760" y="445">obs_grafana.1</text>
+            <g class="prot m"><path class="stalk" d="M716.9,404 L707,404"/>
+              <rect x="625" y="393" width="82" height="22" rx="11"/><text x="666" y="408">monitoring</text></g>
+            <g class="prot v"><path class="stalk" d="M760,466 L760,476"/>
+              <rect x="693" y="476" width="134" height="22" rx="11"/><text x="760" y="491">grafana-store · rw</text></g>
+            <path d="M760,498 C766,524 786,542 799,554" fill="none" stroke="#9B7BFF" stroke-width="4" stroke-linecap="round"/>
+
+            <circle cx="800" cy="610" r="32" fill="url(#gVol)" stroke="#9B7BFF" stroke-width="2.5"/>
+            <g transform="translate(800,592)">
+              <polygon points="-10,-6 -3,6 -17,6" fill="#F1ECFF"/>
+              <rect x="4" y="-6" width="12" height="12" rx="2" fill="#16C7B0" transform="rotate(45,10,0)"/></g>
+            <text class="v-name" x="800" y="618">grafana-store</text>
+            <text class="v-sub" x="800" y="632">local · 820 Mio</text>
+            <g class="prot v"><path class="stalk" d="M800,578 L800,576"/>
+              <rect x="753" y="554" width="94" height="22" rx="11"/><text x="800" y="569">grafana · rw</text></g>
+
+            <circle cx="560" cy="660" r="34" fill="#191C24" stroke="#5A6070" stroke-width="2.5" stroke-dasharray="7 6"/>
+            <g transform="translate(560,641)">
+              <rect x="-15" y="-6" width="12" height="12" rx="2" fill="#A9A79F"/>
+              <rect x="3" y="-6" width="12" height="12" rx="2" fill="none" stroke="#7B808C" stroke-width="2" transform="rotate(45,9,0)"/>
+              <circle cx="27" r="6" fill="none" stroke="#7B808C" stroke-width="2.4"/>
+              <line x1="23" y1="4" x2="31" y2="-4" stroke="#7B808C" stroke-width="2"/></g>
+            <text class="b-name" x="560" y="668" style="font-size:17px;fill:#A9A79F">adminer-tmp</text>
+            <text class="b-id" x="560" y="684">orphelin · arrêté 12 j</text>
+          </g>
+
+          <!-- =========================================================
+               ÉCLAIRÉ — sélection shop_api.1 et son voisinage
+               ========================================================= -->
+          <g>
+            <!-- zones -->
+            <rect x="60" y="80" width="290" height="330" rx="92" fill="#17284F"/>
+            <rect x="60" y="80" width="290" height="330" rx="92" fill="none" stroke="#4C8DFF" stroke-width="3"/>
+            <text class="z-label" x="84" y="126" fill="#8FB8FF">frontend</text>
+            <text class="z-sub" x="84" y="144" fill="#6E8FCC">10.0.3.0/24 · overlay chiffré</text>
+
+            <rect x="200" y="180" width="470" height="330" rx="100" fill="#3A1E17" fill-opacity=".92"/>
+            <rect x="200" y="180" width="470" height="330" rx="100" fill="none" stroke="#FF6B4A" stroke-width="3"/>
+            <text class="z-label" x="392" y="226" fill="#FF9C7C">backend</text>
+            <text class="z-sub" x="392" y="244" fill="#C2745C">10.0.9.0/24 · interne</text>
+
+            <!-- co-réseau -->
+            <g stroke="#5C6376" stroke-width="2.5" stroke-linecap="round">
+              <line x1="150" y1="165" x2="255" y2="330"/>
+              <line x1="255" y1="330" x2="460" y2="430"/>
+              <line x1="255" y1="330" x2="600" y2="250"/>
+              <line x1="460" y1="430" x2="600" y2="250"/>
+            </g>
+
+            <!-- arêtes de volume -->
+            <g fill="none" stroke="#9B7BFF" stroke-width="5" stroke-linecap="round">
+              <path d="M204,407 C182,412 162,412 140,415"/>
+              <path d="M303,407 C306,470 278,512 268,554"/>
+              <path d="M413,502 C412,524 410,540 409,554"/>
+            </g>
+
+            <!-- web -->
+            <circle cx="141" cy="157" r="42" fill="#4C8DFF" opacity=".10" filter="url(#drift)"/>
+            <circle cx="150" cy="165" r="46" fill="url(#gCont)" stroke="#8A93A8" stroke-width="2.5" filter="url(#lift)"/>
+            <g transform="translate(150,137)">
+              <rect x="-24" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/>
+              <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45)"/>
+              <circle cx="19" r="6.5" fill="#3ED598"/></g>
+            <text class="b-name" x="150" y="173">web</text>
+            <text class="b-id" x="150" y="190">shop_web.1</text>
+            <g class="prot f"><path class="stalk" d="M193.5,150 L204,150"/>
+              <rect x="204" y="139" width="72" height="22" rx="11"/><text x="240" y="154">frontend</text></g>
+
+            <!-- api — SÉLECTION -->
+            <circle cx="255" cy="330" r="66" fill="#FFFFFF" opacity=".10" filter="url(#glow)"/>
+            <circle cx="248" cy="323" r="50" fill="#FFFFFF" opacity=".07" filter="url(#drift)"/>
+            <circle cx="255" cy="330" r="66" fill="none" stroke="#FFFFFF" stroke-width="1.6" opacity=".5"/>
+            <circle cx="255" cy="330" r="54" fill="url(#gSel)" stroke="#FFFFFF" stroke-width="3.5" filter="url(#lift)"/>
+            <g transform="translate(255,298)">
+              <rect x="-32" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/>
+              <rect x="-14" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45)"/>
+              <circle cx="9" r="6.5" fill="#3ED598"/>
+              <path d="M22,4 L28,-4 L34,4" fill="none" stroke="#FFC94D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <text class="b-name" x="255" y="340" style="font-size:23px">api</text>
+            <text class="b-id" x="255" y="358" style="fill:#D6D3CB">shop_api.1</text>
+            <g class="prot f"><path class="stalk" d="M202.8,316 L192,316"/>
+              <rect x="120" y="305" width="72" height="22" rx="11"/><text x="156" y="320">frontend</text></g>
+            <g class="prot b"><path class="stalk" d="M307.2,316 L318,316"/>
+              <rect x="318" y="305" width="62" height="22" rx="11"/><text x="349" y="320">backend</text></g>
+            <g class="prot v"><path class="stalk" d="M224.6,374.6 L212,385"/>
+              <rect x="160" y="385" width="88" height="22" rx="11"/><text x="204" y="400">pgdata · rw</text></g>
+            <g class="prot v"><path class="stalk" d="M285.4,374.6 L296,385"/>
+              <rect x="256" y="385" width="94" height="22" rx="11"/><text x="303" y="400">pg-data · ro</text></g>
+
+            <!-- pgdata -->
+            <circle cx="114" cy="464" r="28" fill="#9B7BFF" opacity=".10" filter="url(#drift)"/>
+            <circle cx="120" cy="470" r="32" fill="url(#gVol)" stroke="#9B7BFF" stroke-width="2.5" filter="url(#liftS)"/>
+            <g transform="translate(120,452)">
+              <polygon points="-10,-6 -3,6 -17,6" fill="#F1ECFF"/>
+              <rect x="4" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45,10,0)"/></g>
+            <text class="v-name" x="120" y="478">pgdata</text>
+            <text class="v-sub" x="120" y="492">local · 4,2 Gio</text>
+            <g class="prot v"><path class="stalk" d="M120,438 L120,436"/>
+              <rect x="85" y="414" width="70" height="22" rx="11"/><text x="120" y="429">api · rw</text></g>
+
+            <!-- pg-data -->
+            <circle cx="324" cy="604" r="28" fill="#9B7BFF" opacity=".10" filter="url(#drift)"/>
+            <circle cx="330" cy="610" r="32" fill="url(#gVol)" stroke="#9B7BFF" stroke-width="2.5" filter="url(#liftS)"/>
+            <g transform="translate(330,592)">
+              <polygon points="-10,-6 -3,6 -17,6" fill="#F1ECFF"/>
+              <rect x="4" y="-6" width="12" height="12" rx="2" fill="#7B808C" transform="rotate(45,10,0)"/></g>
+            <text class="v-name" x="330" y="618">pg-data</text>
+            <text class="v-sub" x="330" y="632">nfs · 118 Gio</text>
+            <text class="marg" x="330" y="664" text-anchor="middle">VOLUME PARTAGÉ · 2 NŒUDS</text>
+            <g class="prot v"><path class="stalk" d="M302.8,593.3 L287,576"/>
+              <rect x="225" y="554" width="70" height="22" rx="11"/><text x="260" y="569">api · ro</text></g>
+            <g class="prot v"><path class="stalk" d="M358.1,594.7 L374,576"/>
+              <rect x="366" y="554" width="88" height="22" rx="11"/><text x="410" y="569">worker · ro</text></g>
+
+            <!-- worker -->
+            <circle cx="452" cy="423" r="42" fill="#FF6B4A" opacity=".10" filter="url(#drift)"/>
+            <circle cx="460" cy="430" r="46" fill="url(#gCont)" stroke="#8A93A8" stroke-width="2.5" filter="url(#lift)"/>
+            <g transform="translate(460,402)">
+              <rect x="-24" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/>
+              <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45)"/>
+              <circle cx="19" r="6" fill="none" stroke="#FFA53C" stroke-width="3"/></g>
+            <text class="b-name" x="460" y="438">worker</text>
+            <text class="b-id" x="460" y="455">shop_worker.1</text>
+            <g class="prot b"><path class="stalk" d="M502.3,412 L512,412"/>
+              <rect x="512" y="401" width="62" height="22" rx="11"/><text x="543" y="416">backend</text></g>
+            <g class="prot v"><path class="stalk" d="M429.1,464.2 L420,480"/>
+              <rect x="367" y="480" width="94" height="22" rx="11"/><text x="414" y="495">pg-data · ro</text></g>
+
+            <!-- prometheus -->
+            <circle cx="592" cy="243" r="44" fill="#FFC94D" opacity=".09" filter="url(#drift)"/>
+            <circle cx="600" cy="250" r="48" fill="url(#gCont)" stroke="#8A93A8" stroke-width="2.5" filter="url(#lift)"/>
+            <g transform="translate(600,220)">
+              <rect x="-24" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/>
+              <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#16C7B0" transform="rotate(45)"/>
+              <circle cx="19" r="6.5" fill="#3ED598"/></g>
+            <text class="b-name" x="600" y="258" style="font-size:18px">prometheus</text>
+            <text class="b-id" x="600" y="275">obs_prometheus.1</text>
+            <g class="prot b"><path class="stalk" d="M554.1,236 L544,236"/>
+              <rect x="482" y="225" width="62" height="22" rx="11"/><text x="513" y="240">backend</text></g>
+            <g class="prot m" opacity=".4"><path class="stalk" d="M645.9,236 L656,236"/>
+              <rect x="656" y="225" width="82" height="22" rx="11"/><text x="697" y="240">monitoring</text></g>
+          </g>
+
+          <!-- ===== ROSE GRAPHIQUE + MENTION D'ÉCHELLE ===== -->
+          <g transform="translate(690,700)">
+            <polygon points="0,-46 7,-16 32,-32 16,-7 46,0 16,7 32,32 7,16 0,46 -7,16 -32,32 -16,7 -46,0 -16,-7 -32,-32 -7,-16"
+                     fill="#1F232E" stroke="#FFC94D" stroke-width="2.5"/>
+            <polygon points="0,-46 7,-16 16,-7 46,0 16,7 7,16 0,46 -7,16 -16,7 -46,0 -16,-7 -7,-16" fill="#FFC94D" opacity=".22"/>
+            <circle r="5" fill="#FFC94D"/>
+            <text x="0" y="-56" text-anchor="middle" class="marg" style="fill:#FFC94D">N</text>
+          </g>
+          <text class="marg" x="30" y="726">SANS ÉCHELLE — LA DISTANCE NE MESURE RIEN</text>
+        </svg>
+
+        <!-- LÉGENDE : clé d'affiche -->
+        <div class="legend">
+          <div class="lg">
+            <h3>Forme = type</h3>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/></svg> Conteneur</div>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><polygon points="0,-7 7,6 -7,6" fill="#9B7BFF"/></svg> Volume</div>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><polygon points="7,0 3.5,6 -3.5,6 -7,0 -3.5,-6 3.5,-6" fill="none" stroke="#4C8DFF" stroke-width="2"/></svg> Réseau</div>
+          </div>
+          <div class="lg">
+            <h3>Losange = stack · cercle = état</h3>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45)"/></svg> <code>shop</code> &nbsp;
+              <svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6" y="-6" width="12" height="12" rx="2" fill="#16C7B0" transform="rotate(45)"/></svg> <code>obs</code></div>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="6.5" fill="#3ED598"/></svg> En marche &nbsp;
+              <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="6" fill="none" stroke="#FFA53C" stroke-width="3"/></svg> Redémarrages</div>
+            <div class="li"><svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="6" fill="none" stroke="#7B808C" stroke-width="2.4"/><line x1="-4.5" y1="4.5" x2="4.5" y2="-4.5" stroke="#7B808C" stroke-width="2"/></svg> Arrêté &nbsp;
+              <svg width="20" height="20" viewBox="-10 -10 20 20"><path d="M-6,4 L0,-4 L6,4" fill="none" stroke="#FFC94D" stroke-width="3" stroke-linecap="round"/></svg> Port publié</div>
+          </div>
+          <div class="lg">
+            <h3>Zones de réseau</h3>
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" rx="7" fill="#17284F" stroke="#4C8DFF" stroke-width="2"/></svg> <code>frontend</code></div>
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" rx="7" fill="#3A1E17" stroke="#FF6B4A" stroke-width="2"/></svg> <code>backend</code></div>
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" rx="7" fill="#3A2E10" stroke="#FFC94D" stroke-width="2"/></svg> <code>monitoring</code></div>
+            <p style="margin-top:8px">Recouvrement = objet multi-réseau.</p>
+          </div>
+          <div class="lg">
+            <h3>Excroissances — le nom exact</h3>
+            <div class="specimen">pgdata <span>·</span> pg-data <span>·</span> pg_data</div>
+            <p>Chaque raccord porte le nom complet de l'objet relié et son mode (<code>rw</code>/<code>ro</code>), en chasse fixe.</p>
+            <p style="margin-top:8px">Traînée floue = dérive continue des bulles. Estompé à 16 % = hors du voisinage sélectionné.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="ph">
+          <span class="close">✕</span>
+          <div class="oid">shop_api.1</div>
+          <div class="sub">Conteneur · stack <span style="color:#F25C8A">shop</span> · node-01</div>
+          <div class="pastilles">
+            <svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F7F4ED"/></svg>
+            <svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6" y="-6" width="12" height="12" rx="2" fill="#F25C8A" transform="rotate(45)"/></svg>
+            <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="6.5" fill="#3ED598"/></svg>
+            <svg width="20" height="20" viewBox="-10 -10 20 20"><path d="M-6,4 L0,-4 L6,4" fill="none" stroke="#FFC94D" stroke-width="3" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h4>Identité</h4>
+          <div class="kv"><span class="k">Image</span><span class="v">ghcr.io/portolan/shop-api:2.14.3</span></div>
+          <div class="kv"><span class="k">ID</span><span class="v">7f3c1a9e0b42</span></div>
+          <div class="kv"><span class="k">État</span><span class="v">running <i>· 6 j 04 h</i></span></div>
+        </div>
+        <div class="sec">
+          <h4>Réseaux · 2</h4>
+          <div class="kv"><span class="k">frontend</span><span class="v">10.0.3.14/24</span></div>
+          <div class="kv"><span class="k">backend</span><span class="v">10.0.9.22/24</span></div>
+        </div>
+        <div class="sec">
+          <h4>Montages · 2 volumes distincts</h4>
+          <div class="mount"><span class="nm">pgdata</span><span class="path">/var/lib/postgresql/data</span><span class="fl">RW</span></div>
+          <div class="mount"><span class="nm">pg-data</span><span class="path">/srv/backup/pg</span><span class="fl">RO</span></div>
+        </div>
+        <div class="sec">
+          <h4>Ports · placement</h4>
+          <div class="kv"><span class="k">Publié</span><span class="v">8080/tcp → 30080</span></div>
+          <div class="kv"><span class="k">Contrainte</span><span class="v">node.role == worker</span></div>
+          <div class="kv"><span class="k">Nœud</span><span class="v">node-01 <i>· 10.10.0.11</i></span></div>
+        </div>
+        <div class="sec">
+          <h4>Voisinage</h4>
+          <div class="kv"><span class="k">Éclairé</span><span class="v">2 réseaux · 2 volumes · 3 conteneurs</span></div>
+          <div class="kv"><span class="k">Estompé</span><span class="v">1 réseau · 1 volume · 2 conteneurs</span></div>
+        </div>
+
+        <p class="foot">Portolan montre l'état observé du cluster. Aucun seuil, aucune règle, aucun verdict.</p>
+      </aside>
+    </div>
+
+    <nav class="tabs">
+      <div class="tab on">Vue d'ensemble</div>
+      <div class="tab">Vue nœuds</div>
+      <div class="tab">Vue service</div>
+      <div class="meta"><span>relevé 09:41 UTC</span><span>docker.sock · lecture seule</span></div>
+    </nav>
+
+  </div>
+  </div>
+
+  <p class="caption"><b>État montré :</b> sélection. <code>shop_api.1</code> porte l'anneau blanc et son halo ; tout ce qui lui est accessible reste en pleine saturation — zones <code>frontend</code> et <code>backend</code>, volumes <code>pgdata</code> et <code>pg-data</code>, voisins <code>web</code>, <code>worker</code>, <code>prometheus</code>. Le reste du cluster, y compris le conteneur orphelin <code>adminer-tmp</code>, tombe à 16 % d'opacité.</p>
+
+  <div class="lightstrip">
+    <div class="lh">Mode clair — affiche imprimée · mêmes aplats, encre sur crème</div>
+    <div class="lightbody">
+      <div class="swatches">
+        <h5>Valeurs à reprendre — nuit / jour</h5>
+        <div class="sw-row"><i style="background:#0F1117"></i><b>fond</b> #0F1117 → <i style="background:#FAF7F0"></i> #FAF7F0</div>
+        <div class="sw-row"><i style="background:#F7F4ED"></i><b>encre</b> #F7F4ED → <i style="background:#16181D"></i> #16181D</div>
+        <div class="sw-row"><i style="background:#17284F"></i><b>frontend</b> #17284F/#4C8DFF → <i style="background:#DCE6FF"></i> #DCE6FF/#1B4FD8</div>
+        <div class="sw-row"><i style="background:#3A1E17"></i><b>backend</b> #3A1E17/#FF6B4A → <i style="background:#FFE0D6"></i> #FFE0D6/#E0421C</div>
+        <div class="sw-row"><i style="background:#3A2E10"></i><b>monitoring</b> #3A2E10/#FFC94D → <i style="background:#FFEFC7"></i> #FFEFC7/#C08A00</div>
+        <div class="sw-row"><i style="background:#9B7BFF"></i><b>volumes</b> #9B7BFF → <i style="background:#6B45E0"></i> #6B45E0</div>
+        <div class="sw-row"><i style="background:#F25C8A"></i><b>shop</b> #F25C8A · <i style="background:#16C7B0"></i><b>obs</b> #16C7B0</div>
+        <div class="sw-row"><i style="background:#3ED598"></i><b>marche</b> #3ED598 · <i style="background:#FFA53C"></i><b>redém.</b> #FFA53C</div>
+      </div>
+      <div class="mini">
+        <svg viewBox="0 0 600 180" width="100%" height="180" role="img" aria-label="Aperçu du mode clair : aplats saturés sur crème, bulle api, volume pg-data.">
+          <rect width="600" height="180" fill="#FAF7F0"/>
+          <rect x="20" y="18" width="280" height="140" rx="58" fill="#DCE6FF" stroke="#1B4FD8" stroke-width="3"/>
+          <text x="44" y="52" style="font-family:'Avenir Next',Segoe UI,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;fill:#1B4FD8">frontend</text>
+          <text x="44" y="68" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;letter-spacing:.1em;fill:#5A76BC">10.0.3.0/24</text>
+          <circle cx="122" cy="112" r="42" fill="#FFFFFF" stroke="#16181D" stroke-width="3"/>
+          <g transform="translate(122,90)">
+            <rect x="-24" y="-6" width="12" height="12" rx="2" fill="#16181D"/>
+            <rect x="-6" y="-6" width="12" height="12" rx="2" fill="#E03A6D" transform="rotate(45)"/>
+            <circle cx="19" r="6.5" fill="#12A06E"/></g>
+          <text x="122" y="122" style="font-family:'Avenir Next',Segoe UI,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;fill:#16181D" text-anchor="middle">api</text>
+          <text x="122" y="138" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;fill:#6E7078" text-anchor="middle">shop_api.1</text>
+          <path d="M164,96 L176,96" stroke="#E0421C" stroke-width="2.4" stroke-linecap="round"/>
+          <rect x="176" y="85" width="62" height="22" rx="11" fill="#FFFFFF" stroke="#E0421C" stroke-width="2"/>
+          <text x="207" y="100" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#16181D" text-anchor="middle">backend</text>
+          <path d="M150,146 L162,152" stroke="#6B45E0" stroke-width="2.4" stroke-linecap="round"/>
+          <rect x="158" y="143" width="94" height="22" rx="11" fill="#FFFFFF" stroke="#6B45E0" stroke-width="2"/>
+          <text x="205" y="158" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#16181D" text-anchor="middle">pg-data · ro</text>
+          <path d="M252,152 C310,150 340,124 384,110" fill="none" stroke="#6B45E0" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="424" cy="102" r="34" fill="#EDE6FF" stroke="#6B45E0" stroke-width="3"/>
+          <g transform="translate(424,84)"><polygon points="-10,-6 -3,6 -17,6" fill="#3D2A80"/><rect x="4" y="-6" width="12" height="12" rx="2" fill="#7B808C" transform="rotate(45,10,0)"/></g>
+          <text x="424" y="110" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;font-weight:600;fill:#221846" text-anchor="middle">pg-data</text>
+          <text x="424" y="124" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;fill:#6B5F94" text-anchor="middle">nfs · 118 Gio</text>
+          <rect x="389" y="46" width="70" height="22" rx="11" fill="#FFFFFF" stroke="#6B45E0" stroke-width="2"/>
+          <text x="424" y="61" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#16181D" text-anchor="middle">api · ro</text>
+          <path d="M424,68 L424,68.5" stroke="#6B45E0" stroke-width="2.4"/>
+          <g transform="translate(534,100) scale(.62)">
+            <polygon points="0,-46 7,-16 32,-32 16,-7 46,0 16,7 32,32 7,16 0,46 -7,16 -32,32 -16,7 -46,0 -16,-7 -32,-32 -7,-16"
+                     fill="#FFF3D2" stroke="#C08A00" stroke-width="3"/>
+            <circle r="5" fill="#C08A00"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
