@@ -63,12 +63,5 @@ A single image, deployed by one `docker stack deploy`, running inside the swarm 
 construction: fonts and every asset are served by Portolan itself, at a cost of a few hundred KB of
 image.
 
-**Multi-arch amd64 + arm64 is proposed and not ratified** — the homelab tribe is largely on ARM. It sits
-in the six-point operational envelope in `SPEC.md` → Open Questions, together with the rest of the
-runtime envelope. Nothing here ratifies it.
-
-## Not yet decided
-
-CI, test strategy, the multi-arch build and release publication were requested of the architecture run
-and never reached. They are the one structural dimension deliberately left open, and this file states
-that rather than filling it.
+**Multi-arch amd64 + arm64**, ratified 2026-09-14 — the homelab tribe is largely on ARM. Built and
+published on tag; see *Verification and CI* in `architecture-decisions.md` for the gates around it.

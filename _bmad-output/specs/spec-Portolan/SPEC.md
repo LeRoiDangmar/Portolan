@@ -16,7 +16,7 @@ sources:
 # Portolan — a read-only topology map of a Docker Swarm cluster
 
 **How to read this.** The kernel below is the altitude. `prd.md` is the normative requirement
-catalogue: 83 FRs and 20 NFRs whose numbers are assigned once and never reused, and which epics,
+catalogue: 84 FRs and 20 NFRs whose numbers are assigned once and never reused, and which epics,
 stories and reviews cite by number. `DESIGN.md` owns how Portolan looks, `EXPERIENCE.md` owns how it
 behaves, and both are `status: final`. `architecture-decisions.md` and `stack.md` carry the structural
 decisions taken after the PRD, which exist nowhere upstream. Each capability names the requirements it
@@ -113,11 +113,11 @@ furniture.
 
 - **CAP-17** — Chrome and chart apparatus
   - **intent:** The controls carry no information of their own, and the chart carries its own decoder.
-  - **success:** A toolbar above the canvas carries *Fit to chart*, *Reorganise*, and — while an object is selected — *Isolate* and *Keep only this*; **Fit to chart must exist on screen**, being the only route back to the whole-cluster frame. One control vocabulary throughout, with exactly three states — action, latched, unavailable — and no others; an unavailable control is shown rather than hidden so the toolbar never reflows under the pointer. **No control anywhere is a filled button**: this is a read-only product with no primary action. The chart legend is a permanent band beneath the canvas, enumerating the networks actually on the chart rather than a fixed palette. Layout is three fixed columns above the legend band and the tab bar; the canvas takes every extra pixel and the chrome columns never grow. Covers FR-63, FR-76, FR-77, FR-78, FR-79.
+  - **success:** A toolbar above the canvas carries *Fit to chart*, *Reorganise*, and — while an object is selected — *Isolate* and *Keep only this*; **Fit to chart must exist on screen**, being the only route back to the whole-cluster frame. One control vocabulary throughout, with exactly three states — action, latched, unavailable — and no others; an unavailable control is shown rather than hidden so the toolbar never reflows under the pointer. **No control anywhere is a filled button**: this is a read-only product with no primary action. The chart legend is a permanent band beneath the canvas. **It decodes the mark families, health and the two grouping languages, and does not enumerate the networks present on the chart** — see Declared departures: the enumeration is what yielded to the band's arithmetic, and the zone field and detail panel already carry the network answer. Layout is three fixed columns above the legend band and the tab bar; the canvas takes every extra pixel and the chrome columns never grow. Covers FR-63, FR-76, FR-77, FR-78, FR-79.
 
 - **CAP-18** — Literal export to SVG and PNG
   - **intent:** The user takes the frame they are looking at out of the product.
-  - **success:** Current framing, current zoom and active filters are respected literally, with one declared exception — masking is on for the export and off for the screen. The chart legend, the graduated bezel and the registration marks are part of the chart, ship inside the export, and cannot be cropped out. Accepted cost: an export taken from the landing frame ships without the fine labels, because the export is literal. Covers FR-46, FR-47, FR-48.
+  - **success:** Current framing, current zoom and active filters are respected literally, with one declared exception — masking is on for the export and off for the screen. The chart legend, the graduated bezel and the registration marks are part of the chart, ship inside the export, and cannot be cropped out. Accepted costs: an export taken from the landing frame ships without the fine labels, because the export is literal; and the legend travels with the export without naming that export's networks (CAP-17). Covers FR-46, FR-47, FR-48.
 
 - **CAP-19** — Address masking
   - **intent:** The map can be shown to people without putting the internal addressing plan on the wall.
@@ -129,7 +129,7 @@ furniture.
 
 - **CAP-21** — The not-reachable screen
   - **intent:** When Portolan is running but is not being reached at the address it is bound to, it says so with the same candour as the socket-unreachable screen.
-  - **success:** A screen symmetric to the socket-unreachable one, stating what is bound where and naming the three documented ways to open it. **Addition with no upstream**, ratified 2026-09-14: the safe default binds to `127.0.0.1` on the manager, and a safe default with no screen explaining it is a product that fails in silence at first contact.
+  - **success:** A screen symmetric to the socket-unreachable one, stating what is bound where and naming the three documented ways to open it. **Addition with no upstream**, ratified 2026-09-14: the safe default binds to `127.0.0.1` on the manager, and a safe default with no screen explaining it is a product that fails in silence at first contact. Covers FR-84.
 
 - **CAP-22** — Two vocabularies, strictly separated
   - **intent:** The chassis speaks chart; anything naming a real cluster thing speaks Docker.
@@ -137,7 +137,7 @@ furniture.
 
 - **CAP-23** — Deploys as one image into the swarm it maps
   - **intent:** An operator installs Portolan on a cluster they do not understand, in one step, without fetching anything from the internet.
-  - **success:** A single container image, one `docker stack deploy`, running inside the swarm it maps, one swarm per instance. Air-gapped by construction: no CDN, no external font, no external asset — everything the browser needs is served by Portolan, fonts included. The published stack file binds host mode on `127.0.0.1` with a `node.role == manager` placement constraint, and carries the three ways to open it — routing mesh, internal overlay plus reverse proxy, VPN — commented directly above the line to uncomment. Covers NFR-1, NFR-4; exposure defaults are in `architecture-decisions.md`.
+  - **success:** A single container image, one `docker stack deploy`, running inside the swarm it maps, one swarm per instance. Air-gapped by construction: no CDN, no external font, no external asset — everything the browser needs is served by Portolan, fonts included. The published stack file binds host mode on `127.0.0.1` with a `node.role == manager` placement constraint, and carries the three ways to open it — routing mesh, internal overlay plus reverse proxy, VPN — commented directly above the line to uncomment. The image is multi-arch amd64 + arm64, is configured by environment variables only, and its healthcheck tests whether Portolan *serves*. Covers NFR-1, NFR-4; the full operational envelope and the exposure defaults are in `architecture-decisions.md`.
 
 - **CAP-24** — Localisation without a code change
   - **intent:** A new language is a file, not a code change.
@@ -180,9 +180,11 @@ furniture.
 - **No manual refresh.**
 - **No 3D, perspective or isometry.** Depth is stylistic, never spatial.
 - **No stack rendered as a bubble or as a filled area.**
+- **Portolan writes nothing.** No volume, no database, no disk cache; the container is disposable.
 - **No shared map.** No server-held layout, no session, no two users looking at one synchronised surface.
 - **No delta reconciliation protocol.** Transport is a full snapshot per survey.
 - **No socket-mediating proxy sidecar in v1.** Documented in the README as optional hardening; see `architecture-decisions.md` for who decided this and against what.
+- **No browser-driven end-to-end tests in v1.** They would put a browser and a GPU back into the verification loop, which the scene decision exists to keep out, and the cost would be paid on every PR.
 - **Not an audience: the population running Swarm underneath a PaaS without knowing it.** They have no Swarm vocabulary and would not recognise the problem as theirs. This exclusion is the standing counter-argument to the beachhead and the case to reopen if it stalls.
 
 ## Success signal
@@ -211,15 +213,19 @@ would make it a different product.
 
 ## Declared departures
 
-- **The recognition silhouette is seeded from the identity key (slot), not from the Docker container ID as FR-13 writes it.** Arbitrated by the user on 2026-09-14 in favour of the architecture decision. Seeded from the container ID, *"the same shape across every survey"* is false from the first redeployment — the recognition channel resets at the exact moment the user is looking at the map to understand what moved. `prd.md` still carries the older wording and should be corrected; until it is, **this SPEC governs**.
-- **CAP-21 has no upstream.** Created by the architecture run, never carried back to the PRD, ratified here on 2026-09-14. It should be added to `prd.md` as a new FR.
-- The PRD carries ten departures of its own from the brief and the spines, plus three additions with no upstream, each declared in `prd.md` §8.2 and §8.3. They are not restated here.
+Three were settled on 2026-09-14 during this run, and **all three were carried back into `prd.md` the
+same day**, so the two documents do not diverge. They are kept here because the reasoning is this run's.
+
+- **The recognition silhouette is seeded from the identity key (slot), not from the Docker container ID.** Seeded from the container ID, *"the same shape across every survey"* is false from the first redeployment — the recognition channel resets at the exact moment the user is reading the map to see what moved. FR-13 revised.
+- **The chart legend no longer enumerates the networks present on the chart.** FR-63 as written is arithmetically impossible in the band FR-78, FR-79 and NFR-16 leave, and of the three ways out — more room, fewer jobs, a different shape — only *fewer jobs* takes no pixel from a canvas whose bodies already land near 14px. FR-63 narrowed, which also closes the first row of the PRD's carried-to-design list.
+- **CAP-21 had no upstream.** Created by the architecture run and never carried back. Added as FR-84.
+- The PRD carries ten departures of its own from the brief and the spines, plus four additions with no upstream, each declared in `prd.md` §8.2 and §8.3. They are not restated here.
 
 ## Assumptions
 
 - The SPEC covers the whole of v1 rather than a slice, matching the architecture run's declared scope and the user's choice of input set. No slice was designated.
 - The 23 `[ASSUMPTION]` and 11 `[DEPARTS FROM BRIEF]` markers surviving in `DESIGN.md` and `EXPERIENCE.md` are treated as genuinely undecided, per the PRD's explicit instruction, and not as formalities. They are not enumerated here: the spines are adopted companions and carry them.
-- The architecture run's decisions are treated as ratified except the six-point operational envelope, which its own memlog marks as awaiting ratification and which appears below as an open question.
+- Every architecture decision is now ratified. The six-point operational envelope, which the architecture run left pending, was ratified by the user on 2026-09-14 and is in `architecture-decisions.md`.
 
 ## Open Questions
 
@@ -227,9 +233,6 @@ would make it a different product.
 - **Mark sizing at the landing level is contradictory as specified, not merely undecided.** On a 14px body an 8px mark is over half the body and buries the stretch channel; a mark sized to the body falls below the 8px floor. One of CAP-6, CAP-8, CAP-10's screen-space rule and the 8px floor must yield, and the candidates each cost something: drop marks at the landing level, cut the reference population, or give the landing level its own mark budget — a fifth reading level in all but name. Owner: product and design, not architecture (NFR-9). Deferred until the harness reports, by explicit agreement.
 - **The luminance clamp on composited zone fields** (NFR-9), on which the entire ≥3:1 edge guarantee rests. Nobody has decided it.
 - **Screen rasteriser backend: Canvas2D or WebGL** — the unresolved half of NFR-19. Deliberately deferred and made reversible by the scene decision — to be settled on measurement, not on a bet. One argument against pure WebGL is already identified: 9px text via an SDF atlas, against the 9px and 7:1 floors, in a product whose thesis is legibility.
-- **The six-point operational envelope is proposed and not ratified:** writes nothing to disk; the server replays the last good survey to a new tab; a failed survey keeps serving the last good survey with its age rather than serving nothing; multi-arch amd64 + arm64; configuration by environment variables only; and a healthcheck that tests whether Portolan *serves*, not whether the survey succeeds — a survey failure is a product state, not a sick container, or Swarm restarts Portolan at every socket hiccup and the map being read disappears.
-- **CI, test strategy, multi-arch build and release publication.** Requested explicitly of the architecture run and never reached; the one structural dimension deliberately left open at its checkpoint.
-- **The chart legend is arithmetically impossible in the space left to it.** Six columns of about 147px, a typographic specimen of 230px that must not wrap, and up to eleven networks to enumerate where six swatches fit. It needs more room, fewer jobs, or a different shape.
 - **Three thresholds the PRD deliberately refuses to invent**, each still unowned in value: the text-size ceiling, the object count above which the map goes still, and the light-palette tint collision — two of its tints currently simulate to a byte-identical value under deuteranopia, in the palette that holds the dense frame best. Owner named for the third: design, before the palette is implemented.
 - **The two grouping languages coincide in position.** 455px of one 1140px stack outline runs within 14px of a network isoline; 346px of another's 1961px within 14px of a second. The seven tells separate them *in kind*, never *in distance*, and no contour may be displaced to buy clearance — only a zone *label* may move, and some labels have nowhere to go, at 4.9px and 0.8px best clearance.
 - **Does the octave pattern resolve at badge size** — roughly 6px of interior, next to as many as five other marks? If not, the network answer at the middle reading levels falls back to the zone field and the detail panel, which is where it already is at the landing level.

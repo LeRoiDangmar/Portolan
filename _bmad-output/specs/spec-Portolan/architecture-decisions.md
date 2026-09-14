@@ -3,8 +3,8 @@
 Companion to `SPEC.md`. These are the structural decisions that keep separately built parts of
 Portolan consistent. They were taken in a coaching run on 2026-09-11 that was interrupted before
 distillation, so `ARCHITECTURE-SPINE.md` was never written and they existed only in that run's process
-log until this SPEC was derived. **That run left one block unratified and one dimension untouched** —
-both are in `SPEC.md` → Open Questions, and nothing below covers them.
+log until this SPEC was derived. Both gaps that run left — its unratified operational envelope and the verification dimension it never
+reached — were closed by the user on 2026-09-14 and are the last two sections of this file.
 
 Each decision names what it binds and what it prevents. A decision without a *prevents* is a
 preference, not a decision.
@@ -150,6 +150,46 @@ overlay plus reverse proxy; VPN — directly above the line to uncomment.
 export, reachable from any node.
 
 CAP-21 exists because a safe default with no screen explaining it fails in silence at first contact.
+
+## Operational envelope
+
+Proposed at the architecture checkpoint, ratified by the user on 2026-09-14.
+
+1. **Portolan writes nothing.** No volume, no database, no disk cache. The container is disposable.
+2. **The server keeps the last good survey and replays it immediately to a new tab.** With no survey yet
+   taken, a new tab waits up to 60s in front of an empty canvas.
+3. **A failed survey keeps serving the last good survey with its age**, never nothing. *This is the
+   decision that makes the client-side stale state possible:* the map can only pale in place because the
+   server never hands it emptiness.
+4. **The image is multi-arch, amd64 + arm64.** The homelab tribe is largely on ARM.
+5. **Configuration is by environment variable only.** The refresh interval is not among them — it is an
+   interface control, not configuration.
+6. **The healthcheck tests whether Portolan serves, not whether the survey succeeds.** A survey failure
+   is a product state, not a sick container. *Prevents:* Swarm restarting Portolan at every socket
+   hiccup, making the map someone is reading disappear — exactly what the stale state exists to avoid.
+
+## Verification and CI
+
+Decided by the user on 2026-09-14, closing the one structural dimension the architecture run left open.
+
+**The harness is a CI gate, not a tool someone remembers to run.**
+
+| Gate | Runs on | Covers |
+| --- | --- | --- |
+| Lint, typecheck | every PR | — |
+| Unit tests | every PR | every stage but the layout, each being a pure function of its input |
+| Layout determinism | every PR | same model, seed and mode in → same positions out; the property the whole no-relayout contract rests on |
+| Harness assertions | every PR | the four distributions, on a generated 396-object scene |
+| Multi-arch build, publish | on tag | amd64 + arm64 |
+
+*Prevents:* the landing-frame legibility question being repaired and then silently re-degraded by a later
+PR. Nothing else would catch it — the arithmetic that found it was done by hand, once.
+
+**This gate is possible only because of the scene decision.** The harness needs no browser and no GPU, so
+its assertions run in ordinary CI. That is the scene decision's benefit being collected.
+
+**Browser-driven end-to-end tests are out of v1.** They would put a browser and a GPU back into the
+verification loop that the scene decision exists to keep out, and the cost would be paid on every PR.
 
 ## Localisation
 
