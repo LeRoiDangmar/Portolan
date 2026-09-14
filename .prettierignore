@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+
+# Not ours to reformat.
+_bmad/
+_bmad-output/
+.claude/
+CLAUDE.md
+LICENSE
+.githooks/
+.gitmessage

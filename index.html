@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1440" />
+    <title>Portolan</title>
+  </head>
+  <body>
+    <!--
+      NFR-16: 1440px is a floor, not a breakpoint. There is no second layout.
+      Everything the page needs is emitted into the bundle — no CDN, no external
+      font, no runtime fetch (NFR-4). The Content-Security-Policy that makes that
+      enforceable is injected at build time by vite.config.ts.
+    -->
+    <div id="portolan"></div>
+    <script type="module" src="/packages/chrome/src/index.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,147 @@
+# Portolan CI — AD-32.
+#
+# On pull request and on `main`: lint, typecheck, unit tests, the AGPLv3 gate, and a
+# build that publishes nothing. The determinism job (AD-8) runs on both architectures.
+#
+# The later gates are named here as pending jobs rather than left silently absent, so a
+# reader sees what is still coming instead of believing CI is complete.
+#
+# Nothing here duplicates .githooks/ — commit-message and branch-name rules are enforced
+# there, once, and CI does not re-litigate them.
+#
+# Image publication is not here by design: `main` builds without publishing and only a
+# `v*` tag publishes (AD-32). The publish workflow belongs to the packaging story.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    name: unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  build:
+    name: build (no publication)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  licences:
+    name: AGPLv3 compatibility (NFR-17)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run licences
+
+  determinism:
+    # AD-32: layout determinism is the one property that must hold on both
+    # architectures, because AD-8's arithmetic guarantee is what the map rests on.
+    name: determinism (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Report whether determinism tests exist yet
+        run: |
+          count=$(find packages harness -name '*determinism*.test.ts' | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "::warning title=No determinism tests yet::The AD-8 determinism suite lands with the layout package. This job runs the matrix and asserts nothing until then."
+          else
+            echo "Found $count determinism test file(s)."
+          fi
+      - run: npm run test:determinism
+
+  pending:
+    # Named, not silently absent. Each of these is a blocking gate in AD-32 that
+    # cannot exist until the package it measures does. Adding the gate means
+    # replacing its entry here with a real job.
+    name: pending — ${{ matrix.gate }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gate: AD-28 contrast and deuteranopia gate
+            awaits: 'packages/tokens (the token file the ratios are computed from) and packages/scene'
+            note: 'Starts red by design: NFR-13 names a light-palette tint collision that design must fix, and NFR-11 exemption set must be complete before the gate is first enabled.'
+          - gate: AD-29 measurement ratchet
+            awaits: 'harness, packages/layout, packages/scene'
+            note: 'Blocks when a measure gets worse than main. Sets no absolute threshold; the reference updates on each merge to main.'
+          - gate: AD-30 scene generation time ratchet
+            awaits: 'harness, packages/scene'
+            note: 'NFR-8 itself is measured by hand on real hardware. CI ratchets scene generation time at 396 objects instead.'
+          - gate: AD-31 browser smoke and chassis accessibility
+            awaits: 'packages/server, packages/chrome, Playwright'
+            note: 'Closed scope: boot and serve, SSE delivers a snapshot, the map draws, chassis controls tab-focusable, FR-57 and FR-64 screens.'
+    steps:
+      - name: Declare the gate as pending
+        run: |
+          echo "::notice title=${{ matrix.gate }} is pending::Waiting on ${{ matrix.awaits }}. ${{ matrix.note }}"
+          echo "Gate:  ${{ matrix.gate }}"
+          echo "Needs: ${{ matrix.awaits }}"
+          echo "Note:  ${{ matrix.note }}"

@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "lib": ["es2024"],
+    "types": ["node"],
+    "paths": {
+      "@portolan/scene": ["../packages/scene/src/index.ts"],
+      "@portolan/layout": ["../packages/layout/src/index.ts"],
+      "@portolan/*": ["../boundary/there-is-no-arrow-back-up.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../packages/scene"
+    },
+    {
+      "path": "../packages/layout"
+    }
+  ]
+}

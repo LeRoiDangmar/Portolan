@@ -1,0 +1,20 @@
+{
+  "name": "@portolan/model",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Graph types, wire form and identity keys, imported by both ends (AD-4, AD-5, AD-42).",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ]
+}

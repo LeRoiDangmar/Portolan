@@ -1,0 +1,24 @@
+{
+  "name": "@portolan/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "HTTP, SSE, last-good-survey cache, healthcheck (AD-11 to AD-14, AD-22).",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@portolan/collector": "*",
+    "@portolan/model": "*"
+  }
+}
