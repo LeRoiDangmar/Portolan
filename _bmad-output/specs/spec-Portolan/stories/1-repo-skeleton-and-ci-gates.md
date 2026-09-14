@@ -120,6 +120,19 @@ spine: the code owns this once it exists*, which is the latitude used here. Type
 newest release the linter supports, is `strict` throughout, and builds the same project references.
 Revisit when `typescript-eslint` supports 7.1; the move is a version bump. Recorded in `README.md`.
 
+**Vitest is a deviation from the spine's seeded runner, and it was not presented as one.**
+The spine's Stack table names **`node:test`** — *"the runner and assertions are stable; coverage,
+module mocking and `--watch` are still experimental in Node 24, so nothing is gated on them"*. At
+planning time the test runner was put to the user as an open choice; it was not open, it was already
+seeded, and the planning pass had read `stack.md` without reading the spine's own `## Stack` section.
+The user chose Vitest on the merits (shared Vite transform, a home for the AD-26 scene assertions),
+and the same *seed, not spine* latitude that covers the TypeScript version covers this too — so the
+decision stands. It is recorded here as a deviation rather than a free pick, because the next person
+to open the spine will find `node:test` written there and needs to know this was weighed, not missed.
+Consequence worth naming: the spine's reason for `node:test` was that nothing is gated on Node's
+experimental coverage and mocking. Vitest removes that constraint, so later stories may use coverage
+and module mocking freely.
+
 **Vitest, and the determinism job asserts nothing yet.** `npm run test:determinism` filters on
 `determinism` in the filename and passes with no tests, because AD-8's suite arrives with the
 `layout` package. The job still runs the two-architecture matrix, and prints a GitHub warning
