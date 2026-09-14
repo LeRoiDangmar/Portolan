@@ -2,7 +2,7 @@
 title: 'Repo skeleton, build envelope and CI gates'
 type: 'chore'
 created: '2026-09-14'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 1
 baseline_commit: 'ed78a4857322ba56501b9200749d555df1b0de74'
@@ -152,9 +152,22 @@ list asks that the envelope *not make a runtime network fetch possible*, which a
 configuration alone does not achieve. The CSP is injected on build only: the dev server needs inline
 script for hot reload, and a policy development quietly relaxes would guard nothing.
 
-## Spec Change Log
-
 ## Review Triage Log
+
+| Finding | Verdict | Evidence |
+| --- | --- | --- |
+| SPDX parser crashes on `-or-later`, false-accepts nested parens, false-rejects `WITH` | **patch** | Confirmed by execution: `satisfied('GPL-3.0-or-later')` threw RangeError (`\bOR\b` matched the internal `-or-`), `(MIT OR SSPL-1.0) AND (SSPL-1.0)` returned `true`. Fixed and re-verified: all eight expressions now correct. |
+| The story's load-bearing criterion had no executable test | **patch** | Two reviewers independently. Confirmed: removing `...boundaries` left every gate green. Fixed; mutation-tested after the fix — removing it now turns 6 tests red. |
+| Subpath imports escaped the boundary rule | **patch** | Found while writing the test: gitignore-style `*` does not cross `/`, so `@portolan/scene/internal` linted clean. Group widened to `@portolan/**` with bare and subpath re-inclusion. |
+| ESLint severity-only override silently preserved previous options | **patch** | Found by the new test: `['error', ...RESTRICTED_GLOBALS]` with an empty list left the network entries in force, so the server exemption did nothing. |
+| CSP asserted against config source text, not build output | **patch** | Confirmed: dropping `sameOriginOnly()` from `plugins` left the test green. Now calls `transformIndexHtml` on the real `index.html`. |
+| `fetch` ban applied to the server, contradicting the README; server exemption killed the whole syntax rule | **patch** | Confirmed by reading the config against the README claim. Both rules now composed from a shared non-network list. |
+| Network ban bypassable via `globalThis.fetch` | **patch** | Member-expression selector added, scoped to `globalThis|window|self` so an unrelated `client.fetch()` is not a false positive. |
+| Determinism probe searched a narrower tree than the runner | **patch** | `find packages harness` vs Vitest's include covering `test/**`. Probe widened. |
+| `rollupOptions.external: []` described as an NFR-4 guard | **patch** | Real: it is Rollup's default for an app build and cannot fail. The claim is corrected in `vite.config.ts` and `README.md` rather than the line removed — the explicit form still shows intent where an entry would be added. |
+| 10 further findings (aggregate CI status, `.nvmrc`, action SHA pinning, lockfile-based licence walk, alias map ignoring `side`, React `jsx` flag, ordered dependency comparison, `frame-ancestors` in a meta tag, `CLAUDE.md` TODOs) | **defer** | Real but outside this story. Recorded in `../../../implementation-artifacts/deferred-work.md`. |
+
+## Spec Change Log
 
 **Round 1 — eight findings, all accepted and fixed.**
 

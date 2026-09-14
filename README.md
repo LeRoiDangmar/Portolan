@@ -103,8 +103,10 @@ first, since the graph is the architecture's, not the code's.
 NFR-4: no CDN, no external font, no runtime fetch. The envelope is built so that one
 cannot be added quietly.
 
-- Vite marks nothing as external, so a dependency that could only be fetched at runtime
-  fails the build rather than the deployment.
+- Vite marks nothing as external. This is stated explicitly in `vite.config.ts` so the
+  intent is visible where someone would add an entry, but it is Rollup's default for an
+  app build and **is not a guard** — it cannot fail. NFR-4 is actually held by the two
+  items below.
 - The production page carries a Content-Security-Policy admitting only its own origin,
   injected at build time. It is not applied to the dev server, which needs inline script
   for hot reload — a policy that development quietly relaxes would guard nothing.

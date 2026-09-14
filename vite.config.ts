@@ -75,9 +75,10 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2024',
     sourcemap: true,
-    // Everything the browser needs is emitted into the image (NFR-4). Nothing is
-    // marked external, so a dependency that could only be fetched at runtime fails
-    // the build rather than the deployment.
+    // Everything the browser needs is emitted into the image (NFR-4). Kept explicit
+    // so the intent is visible at the point someone would add an entry — but this is
+    // Rollup's default for an app build, not a guard: it cannot fail. What actually
+    // holds NFR-4 is the ESLint network ban and the build-time CSP below.
     rollupOptions: { external: [] },
   },
   test: {
