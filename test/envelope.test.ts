@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import type { Plugin } from 'vite';
 import { describe, expect, it } from 'vitest';
+
+import config from '../vite.config.ts';
 
 /**
  * The smoke test. It proves the runner actually runs — a green CI running nothing
@@ -142,10 +145,42 @@ describe('there is no arrow back up', () => {
 });
 
 describe('the build envelope is fixed, not conventional (AD-43)', () => {
-  it('serves the browser from its own origin only', () => {
-    const config = read('../vite.config.ts');
-    expect(config).toContain("default-src 'self'");
-    expect(config).toContain("connect-src 'self'");
+  /**
+   * Run the plugin the build actually runs, on the page the build actually ships.
+   * Reading vite.config.ts as text and grepping for the policy would stay green if
+   * the plugin were dropped from `plugins` or its `apply` flipped away from 'build'.
+   */
+  const sameOriginOnly = (): Plugin => {
+    const plugins = (config.plugins ?? []) as Plugin[];
+    const plugin = plugins.find((entry) => entry?.name === 'portolan:same-origin-only');
+    expect(plugin, 'the same-origin plugin must be registered in vite.config.ts').toBeDefined();
+    return plugin as Plugin;
+  };
+
+  it('is applied on build, where the shipped page is produced', () => {
+    expect(sameOriginOnly().apply).toBe('build');
+  });
+
+  it('puts a same-origin Content-Security-Policy into the built page', async () => {
+    const transform = sameOriginOnly().transformIndexHtml;
+    const handler = typeof transform === 'function' ? transform : transform?.handler;
+    expect(handler).toBeTypeOf('function');
+
+    const html = await handler!.call({} as never, read('../index.html'), {} as never);
+    const output = typeof html === 'string' ? html : read('../index.html');
+
+    expect(output).toMatch(/<meta http-equiv="Content-Security-Policy"/);
+    for (const directive of [
+      "default-src 'self'",
+      "script-src 'self'",
+      "connect-src 'self'",
+      "font-src 'self'",
+      "object-src 'none'",
+    ]) {
+      expect(output).toContain(directive);
+    }
+    // A policy that admitted another origin would defeat the point of having one.
+    expect(output).not.toMatch(/content="[^"]*https?:\/\//);
   });
 
   it('names no CDN or external origin in the page', () => {

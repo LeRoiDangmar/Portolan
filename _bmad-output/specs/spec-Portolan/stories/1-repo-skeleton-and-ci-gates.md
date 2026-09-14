@@ -2,9 +2,9 @@
 title: 'Repo skeleton, build envelope and CI gates'
 type: 'chore'
 created: '2026-09-14'
-status: 'done'
+status: 'in-review'
 route: 'dispatch'
-review_loop_iteration: 0
+review_loop_iteration: 1
 baseline_commit: 'ed78a4857322ba56501b9200749d555df1b0de74'
 context:
   - '{project-root}/_bmad-output/planning-artifacts/architecture/architecture-Portolan-2026-09-11/ARCHITECTURE-SPINE.md'
@@ -156,6 +156,50 @@ script for hot reload, and a policy development quietly relaxes would guard noth
 
 ## Review Triage Log
 
+**Round 1 — eight findings, all accepted and fixed.**
+
+*The gates were configured but not tested.* Three findings shared one root cause: the tests asserted
+the **shape** of a config rather than its **behaviour**, so deleting the guard left them green. Fixed
+by testing through the real tooling, and each fix verified by mutation:
+
+- `test/boundaries.test.ts` (new) lints in-memory source through the real `eslint.config.mjs` via the
+  ESLint Node API — upward imports bare *and* by subpath, a relative escape, permitted imports that
+  must stay clean, and the network ban. Removing `...boundaries` from the config fails 6 tests.
+- That test exposed a real hole: the group was `@portolan/*`, and gitignore-style `*` does not cross
+  a `/`, so `@portolan/scene/internal` linted clean. Now `@portolan/**`, with each permitted package
+  un-matched both bare and by subpath.
+- `test/envelope.test.ts` now calls the CSP plugin's `transformIndexHtml` handler on the real
+  `index.html` and asserts the policy in the returned markup, plus `apply === 'build'`. Dropping the
+  plugin fails 2 tests; flipping `apply` fails 1.
+- `test/licences.test.ts` (new) is a table over the SPDX parser, which no installed licence exercises.
+  Replacing `satisfied` with `() => true` fails 8 tests.
+
+*The SPDX parser was broken three ways* (`scripts/check-licences.mjs`), all real: `/\bOR\b/i` matched
+the `-or-` inside `GPL-3.0-or-later`, making every `-or-later` entry unreachable and throwing;
+`/^\((.*)\)$/s` greedily stripped two non-matching parens, so `(MIT OR SSPL-1.0) AND (SSPL-1.0)`
+passed; and `WITH` exception expressions were rejected outright. Replaced with a tokeniser — parens
+are their own tokens, operators are recognised only as whole top-level tokens, an outer paren layer
+is stripped only when it actually closes at the last token, and `<id> WITH <exception>` defers to the
+licence. `satisfied` is exported and the gate body moved behind an entry-point check.
+
+*The `fetch` ban did not match its documentation.* `no-restricted-globals` had no server exemption at
+all while the server override switched off the **whole** of `no-restricted-syntax` — silently killing
+every future syntax rule in that package. Both rules are now composed from a non-network list plus a
+network list; the server override drops only the network half. Note ESLint keeps a rule's previous
+options when given a severity alone, so an empty list must become `off`, not `['error']` — found by
+the new test, which caught the first attempt.
+
+*The network ban matched bare identifiers only*, so `globalThis.fetch`, `window.fetch` and
+`new globalThis.WebSocket` linted clean. Added a member-expression selector scoped to `globalThis`,
+`window` and `self`, so an unrelated `client.fetch(...)` is not a false positive.
+
+*The CI determinism probe searched a narrower tree than the runner* — `find packages harness` against
+a Vitest `include` that also covers `test/**`. A suite placed under `test/` would have run while the
+step still printed "no determinism tests yet". The probe now searches the same three trees.
+
+*Stale doc comment* above `satisfied` described a denylist constant that never existed. Deleted and
+replaced with one that describes the function.
+
 ## Verification
 
 **Commands:** all run on Node 24.13.1 / npm 11.8.0.
@@ -164,7 +208,8 @@ script for hot reload, and a policy development quietly relaxes would guard noth
 - `npm run typecheck` -- passes across all twelve workspaces plus `tsconfig.tools.json`, with
   `strict` and `noUncheckedIndexedAccess`/`exactOptionalPropertyTypes` on top.
 - `npm run lint` -- `eslint .` and `prettier --check .` both clean.
-- `npm test` -- 44 tests in `test/envelope.test.ts`, all passing.
+- `npm test` -- 81 tests across `test/envelope.test.ts`, `test/boundaries.test.ts` and
+  `test/licences.test.ts`, all passing.
 - `npm run build` -- `tsc --build` emits `dist/` for all twelve workspaces (the server's
   ahead-of-time output), then Vite emits `dist/browser/`.
 - `npm run licences` -- 136 installed packages checked, all AGPLv3-compatible.

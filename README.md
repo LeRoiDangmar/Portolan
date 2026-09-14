@@ -90,7 +90,9 @@ the workspace symlink in `node_modules` as soon as the other package has been bu
 
 `test/envelope.test.ts` asserts that every `package.json` and `tsconfig.json` agrees with
 the graph, and that the package list still matches the Structural Seed. Editing one
-without the others fails the test.
+without the others fails the test. `test/boundaries.test.ts` goes further and lints real
+source through the real config: an upward import — bare or by subpath — must be reported,
+and a permitted one must not.
 
 Adding a permitted edge means editing `dependency-graph.json`, the importing package's
 `dependencies` and its `tsconfig.json` `references` and `paths` — and the architecture
@@ -106,9 +108,16 @@ cannot be added quietly.
 - The production page carries a Content-Security-Policy admitting only its own origin,
   injected at build time. It is not applied to the dev server, which needs inline script
   for hot reload — a policy that development quietly relaxes would guard nothing.
-- ESLint refuses `fetch`, `XMLHttpRequest`, `WebSocket` and `EventSource` outside the
-  server package, which owns the one transport there is.
-- `index.html` names no external origin, and the smoke test asserts it.
+- ESLint refuses `fetch`, `XMLHttpRequest`, `WebSocket` and `EventSource` — named bare
+  or reached through `globalThis`, `window` or `self` — everywhere except
+  `packages/server`, the one package permitted to speak HTTP directly. That exemption
+  is derived from the network entries alone, so any other restricted global or syntax
+  rule added later still applies to the server.
+- `index.html` names no external origin.
+
+`test/envelope.test.ts` runs the CSP plugin on the real `index.html` and asserts the
+policy lands in the output, and `test/boundaries.test.ts` lints source through the real
+`eslint.config.mjs` — so dropping either guard fails a test rather than shipping quietly.
 
 ### AGPLv3 compatibility is a gate, not an audit
 

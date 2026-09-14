@@ -5,6 +5,7 @@
     "lib": ["es2024"],
     "types": ["node"],
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "composite": false,
     "declaration": false,
     "declarationMap": false,

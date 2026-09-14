@@ -108,7 +108,9 @@ jobs:
       - run: npm ci
       - name: Report whether determinism tests exist yet
         run: |
-          count=$(find packages harness -name '*determinism*.test.ts' | wc -l)
+          # The same tree Vitest's `include` covers — packages/, harness/ and test/ —
+          # so a determinism suite cannot run while this step still calls it absent.
+          count=$(find packages harness test -name '*determinism*.test.ts' | wc -l)
           if [ "$count" -eq 0 ]; then
             echo "::warning title=No determinism tests yet::The AD-8 determinism suite lands with the layout package. This job runs the matrix and asserts nothing until then."
           else
