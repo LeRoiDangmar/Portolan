@@ -4,6 +4,7 @@ companions:
   - ../../planning-artifacts/prds/prd-Portolan-2026-09-11/prd.md
   - ../../planning-artifacts/ux-designs/ux-Portolan-2026-09-10/DESIGN.md
   - ../../planning-artifacts/ux-designs/ux-Portolan-2026-09-10/EXPERIENCE.md
+  - ../../planning-artifacts/architecture/architecture-Portolan-2026-09-11/ARCHITECTURE-SPINE.md
   - architecture-decisions.md
   - stack.md
 sources:
@@ -127,9 +128,9 @@ furniture.
   - **intent:** Every degraded condition is shown as itself, without hiding the map or inventing an error.
   - **success:** Cold load draws in layers — zones, then bodies, then edges — ending on a distinct settling gesture, so *loading* and *living* never look the same. On stale data or a failed survey **the map stays**: it pales and desaturates in place while the survey stamp ages in words — no banner, no overlay, no error screen, no error colour. The detail panel does not take the veil and holds full contrast. A panel whose subject vanished between surveys stays, freezes its values, reads *"Not in the last survey."* and is dismissed by the next click. Socket unreachable with no map ever drawn gets a full-surface screen — the only screen allowed to teach — stating what is missing, why Portolan needs it, and the exact configuration line that fixes it. An empty cluster renders the node backdrop even though it is off by default. Below the minimum viewport, an honest off-chart message rather than a degraded rendering. Covers FR-53 to FR-60.
 
-- **CAP-21** — The not-reachable screen
-  - **intent:** When Portolan is running but is not being reached at the address it is bound to, it says so with the same candour as the socket-unreachable screen.
-  - **success:** A screen symmetric to the socket-unreachable one, stating what is bound where and naming the three documented ways to open it. **Addition with no upstream**, ratified 2026-09-14: the safe default binds to `127.0.0.1` on the manager, and a safe default with no screen explaining it is a product that fails in silence at first contact. Covers FR-84.
+- **CAP-21** — Reachability is answered before the browser, not in it
+  - **intent:** When Portolan is running but is not being reached at the address it is bound to, it says so on the one surface that still works.
+  - **success:** On startup Portolan logs, in the socket-unreachable screen's register, the exact address it is bound to, which node it is on, and what must change to reach it from elsewhere — pointing at the commented lines in the published stack file. `docker service logs` is the surface, and it is the one surface guaranteed to work when the HTTP surface does not. **This is not a screen** — see Declared departures. Covers FR-84, and AD-45 in `ARCHITECTURE-SPINE.md`.
 
 - **CAP-22** — Two vocabularies, strictly separated
   - **intent:** The chassis speaks chart; anything naming a real cluster thing speaks Docker.
@@ -219,6 +220,7 @@ same day**, so the two documents do not diverge. They are kept here because the 
 - **The recognition silhouette is seeded from the identity key (slot), not from the Docker container ID.** Seeded from the container ID, *"the same shape across every survey"* is false from the first redeployment — the recognition channel resets at the exact moment the user is reading the map to see what moved. FR-13 revised.
 - **The chart legend no longer enumerates the networks present on the chart.** FR-63 as written is arithmetically impossible in the band FR-78, FR-79 and NFR-16 leave, and of the three ways out — more room, fewer jobs, a different shape — only *fewer jobs* takes no pixel from a canvas whose bodies already land near 14px. FR-63 narrowed, which also closes the first row of the PRD's carried-to-design list.
 - **CAP-21 had no upstream.** Created by the architecture run and never carried back. Added as FR-84.
+- **CAP-21 is a startup log line, not a screen** — settled 2026-09-14 after `ARCHITECTURE-SPINE.md` was finalised and adopted here. FR-84 and the spine's AD-18 both asked for a full-surface screen symmetric to FR-57; the spine then retired AD-18 as logically unimplementable — *a server the browser cannot reach cannot serve the screen saying so* — and replaced it with AD-45. The need FR-84 named is real; only its surface changes. FR-84 revised, and §8.2's addition row with it.
 - The PRD carries ten departures of its own from the brief and the spines, plus four additions with no upstream, each declared in `prd.md` §8.2 and §8.3. They are not restated here.
 
 ## Assumptions

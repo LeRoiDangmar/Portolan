@@ -149,7 +149,9 @@ overlay plus reverse proxy; VPN — directly above the line to uncomment.
 *Prevents:* the v1 the brief warned against — an unauthenticated full-topology viewer with one-click
 export, reachable from any node.
 
-CAP-21 exists because a safe default with no screen explaining it fails in silence at first contact.
+CAP-21 exists because a safe default with nothing explaining it fails in silence at first contact. It
+is a **startup log line**, not a screen: the server that would serve the screen is the one that cannot
+be reached. See `ARCHITECTURE-SPINE.md` AD-45, which retired AD-18's screen for exactly that reason.
 
 ## Operational envelope
 

@@ -451,11 +451,15 @@ they may not run consecutively. Where a requirement carries a figure, the figure
 - **FR-57** — Socket unreachable with no map ever drawn: a full-surface screen — the only screen in
   the product allowed to teach — stating what is missing, why Portolan needs it, and the exact
   configuration line that fixes it.
-- **FR-84** — Portolan running but not reached at the address it is bound to: a screen symmetric to
-  FR-57, stating what is bound where and naming the three documented ways to open it. **Added
-  2026-09-14** (§8.2). The exposure default is host mode on `127.0.0.1` with a manager placement
-  constraint, and a safe default with no screen explaining it is a product that fails in silence at
-  first contact — FR-57 has no equivalent on the exposure side.
+- **FR-84** — Portolan running but not reached at the address it is bound to: **a startup log line,
+  not a screen.** On startup Portolan logs, in FR-57's register, the exact address it is bound to,
+  which node it is on, and what must change to reach it from elsewhere, pointing at the commented
+  lines in the published stack file. `docker service logs` is the surface, and it is the one surface
+  guaranteed to work when the HTTP surface does not. **Added 2026-09-14, revised the same day**
+  (§8.2). The exposure default is host mode on `127.0.0.1` with a manager placement constraint, and a
+  safe default with nothing explaining it is a product that fails in silence at first contact —
+  FR-57 has no equivalent on the exposure side. It cannot be a screen: a server the browser cannot
+  reach cannot serve the screen saying so.
 - **FR-58** — Empty cluster: the node backdrop renders even though it is off by default, because the
   machines are the whole of what there is.
 - **FR-59** — A machine carrying nothing still renders as a full region with its header and one line
@@ -747,7 +751,7 @@ all** and are therefore specified here or nowhere.
 | Object search, including image tags (FR-36, FR-37, FR-38, FR-83) | Decided 2026-09-11. Absent from both spines; the wireframe draws a search field the spines never mention. Field placement, match behaviour, the no-match state and the interaction with filters are specified in §3.5 because no other document specifies them. |
 | Screen-side address masking (FR-51) | Decided 2026-09-11. Extends a mechanism `DESIGN.md` scopes to the export only. |
 | A minimum Docker Engine API version, declared and checked (FR-64) | Decided 2026-09-11. No upstream document sets one; it adds a third collector-coupled surface (NFR-6). |
-| The not-reachable screen (FR-84) | Decided 2026-09-14, during the spec run. Raised by the architecture work, which set the `127.0.0.1` exposure default and found FR-57 had no symmetric counterpart. |
+| The not-reachable message (FR-84) | Decided 2026-09-14, during the spec run. Raised by the architecture work, which set the `127.0.0.1` exposure default and found FR-57 had no symmetric counterpart. **Revised the same day**, once the architecture spine was finalised: it is a startup log line rather than the screen first specified, because a server the browser cannot reach cannot serve the screen saying so. |
 
 ### 8.3 Departures declared
 
