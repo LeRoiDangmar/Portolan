@@ -2,7 +2,7 @@
 title: "PRD: Portolan"
 status: final
 created: 2026-09-11
-updated: 2026-09-11
+updated: 2026-09-14
 ---
 
 # PRD: Portolan
@@ -231,8 +231,14 @@ they may not run consecutively. Where a requirement carries a figure, the figure
 #### Bodies and motion
 
 - **FR-13** — A bubble has two silhouette channels and only one is data. *Recognition:* the contour
-  is irregular and **seeded from the object's Docker ID**, so it is the same shape across every survey
-  and every screenshot, and it stops carrying at far zoom. *Data:* the body stretches toward the
+  is irregular and **seeded from the object's identity key** — for a task, `stack/service/slot` — so it
+  is the same shape across every survey and every screenshot, and it stops carrying at far zoom.
+  **Revised 2026-09-14** (§8.3): this read *seeded from the object's Docker ID*, under which *the same
+  shape across every survey* is false from the first redeployment, because a service update destroys
+  and recreates its tasks with new container IDs. Accepted cost of the revision: two genuinely
+  different containers, before and after a redeployment, read as one body — the map asserts a
+  continuity Docker does not know. Held because the slot **is** the operator's identity (`docker
+  service ps` prints `web.1`), and the container ID stays visible in the detail panel (FR-25). *Data:* the body stretches toward the
   objects it links to. Bubbles never fuse and never overlap — the layout reserves the deformed hull
   before placing anything, at the cost of fitting fewer objects than circle packing would. Accepted
   cost, §6.
@@ -389,9 +395,14 @@ they may not run consecutively. Where a requirement carries a figure, the figure
   and it has no primary action.
 - **FR-78** — The chart legend is a **permanent band beneath the canvas**, not a summonable panel. It
   is part of the chart, which is why it also ships inside the export (FR-48).
-- **FR-63** — The legend must be able to decode the chart it belongs to: it enumerates the networks
-  actually present on the chart, not a fixed palette, and its typographic specimen renders without
-  wrapping — wrapping destroys the adjacency that is the specimen's whole purpose.
+- **FR-63** — The legend must be able to decode the chart it belongs to: the mark families, health, and
+  the two grouping languages. Its typographic specimen renders without wrapping — wrapping destroys the
+  adjacency that is the specimen's whole purpose. **It does not enumerate the networks present on the
+  chart.** *Narrowed 2026-09-14* (§8.3, and it closes the first row of §7.4): the original requirement
+  was arithmetically impossible in the band FR-78, FR-79 and NFR-16 leave, and of the three ways out —
+  more room, fewer jobs, a different shape — only *fewer jobs* takes no pixel from a canvas whose
+  bodies already land near 14px. The zone field and the detail panel carry the network answer, which is
+  where it already is at the landing level. Accepted cost, §6.
 
 ### 3.8 Voice
 
@@ -440,6 +451,15 @@ they may not run consecutively. Where a requirement carries a figure, the figure
 - **FR-57** — Socket unreachable with no map ever drawn: a full-surface screen — the only screen in
   the product allowed to teach — stating what is missing, why Portolan needs it, and the exact
   configuration line that fixes it.
+- **FR-84** — Portolan running but not reached at the address it is bound to: **a startup log line,
+  not a screen.** On startup Portolan logs, in FR-57's register, the exact address it is bound to,
+  which node it is on, and what must change to reach it from elsewhere, pointing at the commented
+  lines in the published stack file. `docker service logs` is the surface, and it is the one surface
+  guaranteed to work when the HTTP surface does not. **Added 2026-09-14, revised the same day**
+  (§8.2). The exposure default is host mode on `127.0.0.1` with a manager placement constraint, and a
+  safe default with nothing explaining it is a product that fails in silence at first contact —
+  FR-57 has no equivalent on the exposure side. It cannot be a screen: a server the browser cannot
+  reach cannot serve the screen saying so.
 - **FR-58** — Empty cluster: the node backdrop renders even though it is off by default, because the
   machines are the whole of what there is.
 - **FR-59** — A machine carrying nothing still renders as a full region with its header and one line
@@ -585,6 +605,8 @@ Named here so that no capability above reads as unqualified.
 | The transitive questions the product exists for need the reach raised by hand, since the default is one hop. | FR-23 |
 | Embedded fonts add a few hundred KB to the image. | NFR-4 |
 | **On a large cluster the map stops being alive** — exactly the cluster where Portolan is most useful. Two users on two clusters see two different products, and the liveliness that was chosen deliberately is the thing that goes. | FR-71, forced by NFR-8 |
+| Two genuinely different containers, before and after a redeployment, read as one body. | FR-13, revised |
+| The legend travels inside the export without naming that export's networks. | FR-63, narrowed; FR-48 |
 | **By default the exported frame is not what is on screen**: the export masks addresses and the screen does not. | FR-47, FR-50, FR-51 |
 
 ## 7. Open questions and risks
@@ -653,7 +675,8 @@ Ordered. The first row is the one that decides whether the product works at all.
 
 Severity first.
 
-- **FR-63 cannot be satisfied in the space FR-78, FR-79 and NFR-16 leave.** With the panel column
+- **[CLOSED 2026-09-14 — FR-63 was narrowed; the legend gave up the enumeration. Retained for the arithmetic.]**
+  **FR-63 cannot be satisfied in the space FR-78, FR-79 and NFR-16 leave.** With the panel column
   reserved, the legend band's six columns are about 147px each; the typographic specimen is 230px and
   must not wrap, and the zone column must enumerate up to eleven networks where six swatches fit.
   Either the legend gets more room, fewer jobs, or a different shape. As written, the requirement is
@@ -728,6 +751,7 @@ all** and are therefore specified here or nowhere.
 | Object search, including image tags (FR-36, FR-37, FR-38, FR-83) | Decided 2026-09-11. Absent from both spines; the wireframe draws a search field the spines never mention. Field placement, match behaviour, the no-match state and the interaction with filters are specified in §3.5 because no other document specifies them. |
 | Screen-side address masking (FR-51) | Decided 2026-09-11. Extends a mechanism `DESIGN.md` scopes to the export only. |
 | A minimum Docker Engine API version, declared and checked (FR-64) | Decided 2026-09-11. No upstream document sets one; it adds a third collector-coupled surface (NFR-6). |
+| The not-reachable message (FR-84) | Decided 2026-09-14, during the spec run. Raised by the architecture work, which set the `127.0.0.1` exposure default and found FR-57 had no symmetric counterpart. **Revised the same day**, once the architecture spine was finalised: it is a startup log line rather than the screen first specified, because a server the browser cannot reach cannot serve the screen saying so. |
 
 ### 8.3 Departures declared
 
@@ -741,4 +765,6 @@ all** and are therefore specified here or nowhere.
 | Colour is chosen as whole palettes, never swatch by swatch (FR-43). | The brief's *"display control (what is shown, colours, text size)."* | A free colour picker would let the user break the contrast floors the palettes exist to guarantee. Declared upstream. |
 | Network membership is encoded off the bubble fill and onto zones plus marks (FR-11, FR-65). | The brief's *"colour carries network membership."* | Declared upstream. Zones carry membership; the mark carries the exact answer. |
 | The reading ladder **removes** labels rather than shrinking them (FR-15, NFR-10). | The brief's *"all object types from the start"* read as all information at all times. | Declared upstream. A label below its floor is dropped, never shrunk. |
+| The recognition silhouette is seeded from the **identity key (slot)**, not the Docker container ID (FR-13). | This PRD's own earlier wording, and `DESIGN.md`'s. | Decided 2026-09-14, during the spec run, on architecture's finding. Seeded from the container ID, *"the same shape across every survey"* is false from the first redeployment — the recognition channel resets at the exact moment the user is reading the map to see what moved. |
+| The chart legend **no longer enumerates the networks** on the chart (FR-63). | FR-63 as originally written. | Decided 2026-09-14, during the spec run. The original is arithmetically impossible in the space FR-78, FR-79 and NFR-16 leave (§7.4), and *fewer jobs* is the only way out that takes no pixel from the canvas. |
 | **One hop** is the default reach (FR-23). | Flow 1 step 7 in `EXPERIENCE.md`, where the user reduces a wider reach *to* one hop. | The arithmetic is binding and the narration is illustrative: at two hops the highlight lights half the cluster. That journey step is now stale and should be renarrated when `EXPERIENCE.md` is next touched. |

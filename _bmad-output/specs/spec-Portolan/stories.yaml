@@ -1,0 +1,345 @@
+- id: "1"
+  title: Repo skeleton, build envelope and CI gates
+  description: >-
+    Stand up the eleven-package monorepo of the spine's Structural Seed with the fixed build
+    envelope (AD-43), and wire lint, typecheck and unit tests as gates on every PR.
+    No product behaviour; everything after this story assumes this shape.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    The package list and the dependency direction are ARCHITECTURE-SPINE.md's, not yours to
+    rearrange: there is no arrow back up, anywhere. Eleven packages cannot be assembled by
+    convention (AD-43), so the build envelope is fixed here and not per-package. AGPLv3 is a
+    dependency filter and a gate on adoption, not a later audit — every dependency added in this
+    or any later story must be AGPLv3-compatible. Node.js 24 LTS; the move to Node 26 is a
+    documented deferral with a revisit date, not something to pre-empt.
+- id: "2"
+  title: Design tokens as the single source of truth
+  description: >-
+    Author all eleven token namespaces in TypeScript and generate the CSS from them (AD-23), so
+    DESIGN.md documents intent and the token file is normative on values. Includes the blocking
+    NFR-11 and NFR-13 contrast gates (AD-28).
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Expect the build to start RED and stay red until design corrects the palette: two light-palette
+    tints currently simulate to a byte-identical value under deuteranopia (NFR-13), and AD-28 makes
+    that gate blocking on purpose — chosen knowingly over two softer options. Do not relax the gate,
+    do not invent replacement tint values, and do not skip the check to get green. NFR-11's
+    exemption set is incomplete and design owns completing it before the gate is first enabled;
+    if you hit that, stop and say so rather than guessing the set.
+- id: "3"
+  title: String catalogues, externalised from the first commit
+  description: >-
+    One catalogue per language with no string literal in any component (AD-24), English shipped
+    with French alongside it. Covers CAP-24.
+  invoke_dev_with: >-
+    "From the first commit" is the requirement, which is why this lands before any surface that
+    would otherwise hard-code a string. Chassis strings speak chart and object strings speak
+    Docker (CAP-22); the two vocabularies must not be mixed inside one catalogue entry. Spelling
+    is en-GB — `Reorganise` is a shipped control name, not a typo to correct.
+- id: "4"
+  title: The shared graph model package
+  description: >-
+    The TypeScript types for nodes, networks, volumes, stacks, services, containers and their
+    edges, the slot identity keys, the declared wire form, and the identity-seeded silhouette
+    (AD-4, AD-5, AD-6, AD-42). Imported by both ends of the collector/renderer seam.
+  invoke_dev_with: >-
+    Identity is the slot and never the Docker container ID — `stack/service/slot` for replicated
+    services, `stack/service/node` for global ones, name for volumes and networks, Docker ID for
+    nodes and services. The silhouette seed is that identity key, not the container ID; this is a
+    declared departure from FR-13 as first written and the PRD now carries the revision. An image
+    is a detail-panel attribute and never a node. This package may not import anything above it
+    and may not contain a docker-ism beyond the three coupling surfaces NFR-6 permits.
+- id: "5"
+  title: The Docker collector
+  description: >-
+    A read-only-by-construction adapter over the directly mounted socket that surveys one swarm
+    into the model, imposing a total order before the model sees it, plus the declared engine API
+    floor (AD-7, AD-15, AD-16, AD-27). Covers CAP-1 and CAP-3.
+  invoke_dev_with: >-
+    Read-only is by construction, not by discipline: the underlying HTTP client must refuse every
+    method other than GET, so that "we wrote no writes" becomes "we cannot write". `:ro` on a
+    socket mount does not restrict the Docker API and nothing may pretend otherwise. The total
+    ordering in AD-7 is what makes the layout's determinism reachable downstream — without it,
+    map ordering leaks frame-to-frame nondeterminism into positions. Use recorded real Docker API
+    payloads as fixtures and never mix the two fixture kinds (AD-27). Two engine behaviours bear
+    on what you can read and are named in architecture-decisions.md.
+- id: "6"
+  title: The server, SSE transport and survey cadence
+  description: >-
+    HTTP plus SSE carrying a full snapshot per survey, decoupled survey and render cadences, the
+    last-good-survey replay, the three exhaustive tab-open branches, the serve-testing healthcheck,
+    structured stdout logging and the startup binding message (AD-11 to AD-14, AD-19, AD-21, AD-22,
+    AD-44, AD-45). Covers CAP-2 and CAP-21.
+  invoke_dev_with: >-
+    No deltas — a full snapshot per survey, decided against a reconciliation protocol that would be
+    paid for with no measured gain at 400 objects. The server never serves emptiness: on a failed
+    survey it keeps serving the last good one with its age, and that is what makes the client-side
+    staleness veil possible at all. The healthcheck tests that Portolan SERVES, not that the survey
+    succeeds — otherwise Swarm restarts Portolan at every socket hiccup and the map being read
+    disappears, which is exactly what the honest-states contract exists to prevent. CAP-21 is a
+    startup LOG LINE and not a screen: a server the browser cannot reach cannot serve the screen
+    saying so. Log the bound address, the node, and what must change to reach it from elsewhere,
+    pointing at the stack file's commented lines. The server writes nothing to disk, anywhere.
+- id: "7"
+  title: The layout stage
+  description: >-
+    A pure deterministic function of (model, previous positions, seed, mode) producing positions in
+    an abstract space, reserving the deformed hull before placement (AD-1, AD-2, AD-3, AD-8, AD-37,
+    AD-40). Covers CAP-11.
+  invoke_dev_with: >-
+    Determinism and stability are two different properties and AD-37 asks for them to be tested
+    separately: determinism is same input, same output; stability is that a survey which adds or
+    removes objects does not rebate the positions of everything else. Fixed iterations, stable
+    iteration order, no dependency on the clock or on frame timing — an F5 that re-lays the map
+    would be a fourth undeclared relayout and would break the reproducible-screenshot promise.
+    The server never holds positions. Canvas pixels never enter this stage (AD-40). View state has
+    no write path here: only Reorganise, the zone-mode switch and the node-backdrop toggle may call
+    the layout, and no survey, filter, selection, search or panel open may move anything.
+- id: "8"
+  title: The scene description
+  description: >-
+    Model plus positions to a resolution-independent scene — zones as fields, bodies as path data,
+    marks anchored in screen space, text carrying its floor — which is the assertion surface for
+    everything downstream (AD-9, AD-26, AD-35, AD-38, AD-39). Covers CAP-4, CAP-5 and CAP-6.
+  invoke_dev_with: >-
+    This is the decision the whole verification strategy is collected from: the scene is the
+    assertion surface and never the pixels, which is why the harness in the next story needs no
+    browser and no GPU. Every chart-derived figure comes from the scene, so the legend and the
+    export cannot disagree with the screen. Every derived value has exactly one computing owner
+    (AD-38). The scene is a function of the reading level, not of the camera (AD-39). Marks and
+    type live in screen space and do not scale with the canvas transform — without that, a 9.5px
+    label renders at about 2.4px in the very frame the product is judged on.
+- id: "9"
+  title: Synthetic cluster generator and the measurement harness
+  description: >-
+    Generate a 396-object cluster at reference scale, produce the scene on the 884px operative
+    canvas, and report the four distributions — body diameter, mark-rail occupation, stub length,
+    edge contrast over the worst composited field — as a CI ratchet (AD-29, AD-28, AD-30).
+    Covers CAP-25.
+  done_checkpoint: true
+  invoke_dev_with: >-
+    The spine is explicit that this must run BEFORE the first raster-screen commit, not alongside
+    it: that commit decides the screen backend whether or not anyone writes it down. Measure on
+    884px, the real width once the panel column is reserved — not the 1204px the PRD's arithmetic
+    used — and against 396 objects, not the 325 the optimistic figures were computed on. The
+    harness FIXES NO THRESHOLD: the PRD deliberately refuses to invent them and neither the spine
+    nor this contract does either. It is a ratchet, so it prevents the legibility question being
+    repaired and then silently re-degraded by a later PR. NFR-8 is deliberately NOT a CI gate
+    (AD-30) — do not turn it into one. Stop when the four distributions are reported; reading them
+    and deciding what yields is the human's call at the checkpoint after this story.
+- id: "10"
+  title: The SVG rasteriser
+  description: >-
+    Serialise the scene to SVG text, with masking applied as a scene parameter rather than as a
+    rasteriser behaviour (AD-9, AD-34). The export half of CAP-18, placed here because it needs
+    neither a browser nor a GPU.
+  invoke_dev_with: >-
+    Masking is a scene parameter, not something this rasteriser does on its own — that is what
+    keeps the screen and the export from diverging, and it is why the same masked scene can be
+    painted or serialised. A masked value keeps an identical footprint so nothing reflows. The
+    chart legend, the graduated bezel and the registration marks are part of the chart and ship
+    inside the output; they cannot be cropped out.
+- id: "11"
+  title: The screen rasteriser and the camera
+  description: >-
+    Paint the scene to a screen surface with the backend chosen on story 9's measurements, and
+    implement the camera, pan and zoom inside the 100ms interaction budget (AD-10, AD-39).
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Canvas2D or WebGL is settled on the harness output, not on a bet — the scene decision is what
+    kept it reversible this long, and the deferral expires at this commit. One argument is already
+    on the table against pure WebGL: 9px text through an SDF atlas, against the 9px type floor and
+    the 7:1 identifier-channel floor, in a product whose thesis is legibility. Interaction latency
+    is the requirement and there is no frame-rate floor: pan, zoom, selection, filtering and search
+    within 100ms at 396 objects on integrated graphics. A build whose breathing stutters at scale
+    passes; a build that takes half a second to pan does not. The framework never crosses onto the
+    map surface (AD-10).
+- id: "12"
+  title: The four-level reading ladder
+  description: >-
+    Zoom resolves type marks and large labels, then service names, then container names, then
+    per-link labels, with population identical at every level. Covers CAP-10.
+  invoke_dev_with: >-
+    Zoom changes sharpness and never population; filtering changes population and never sharpness.
+    A label that cannot meet its type floor — 9px for anything naming a cluster object, 8px for
+    chassis annotation, both on RENDERED size — is dropped at that level and never shrunk to fit.
+    Deeper labels are reached by zooming, never by clicking. The three discoveries the ladder
+    exists for sit one per level: the orphan, the intruder, the twins.
+- id: "13"
+  title: Bodies and motion
+  description: >-
+    Breathing as local deformation at translation 0px with desynchronised periods, stretch capped
+    toward linked objects, the invariant core, the stillness threshold and reduced-motion handling
+    (AD-2, AD-20, AD-26). Covers CAP-8 and CAP-9.
+  invoke_dev_with: >-
+    Translation 0px is the hardest guarantee in the product and it is what makes continuous motion
+    compatible with clicking anything: labels and click targets never travel, at any zoom, scale or
+    density. Stretch is capped at +32% of base radius and never depends on neighbours — a
+    silhouette that depends on who is next to it kills the recognition channel. Bodies never fuse
+    and never overlap. The object count above which the map goes still is a measured token, not a
+    number to invent, and it is the one threshold the harness cannot reach: it needs a real browser
+    and a hand measurement. If it is not yet measured, say so rather than picking a figure. The
+    stillness is a rendering budget and is never reported as something the user chose.
+    `prefers-reduced-motion` stills continuous motion and keeps every action-triggered transition,
+    the layered first draw included.
+- id: "14"
+  title: The chrome chassis
+  description: >-
+    React owning the chassis and only the chassis — three fixed columns, the toolbar, the bottom
+    tab bar, the left menu, the three-state control vocabulary and the focus ring (AD-25, AD-10).
+    Covers CAP-17's chrome half and CAP-22.
+  invoke_dev_with: >-
+    React never crosses onto the map surface. The panel's column is permanently reserved whether
+    the panel is open or not, so opening it never re-lays or reframes the map, and the chrome
+    columns never grow — the canvas takes every extra pixel. A control has exactly three states —
+    action, latched, unavailable — and no others; an unavailable control is shown rather than
+    hidden so the toolbar never reflows under the pointer. NO CONTROL ANYWHERE IS A FILLED BUTTON:
+    this is a read-only product with no primary action. Fit to chart must exist on screen, being
+    the only route back to the whole-cluster frame, and there are no keyboard shortcuts to reach it
+    by. Chrome controls take ordinary tab focus in DOM order with a visible ring; there is no
+    keyboard traversal of the graph.
+- id: "15"
+  title: Picking, selection and the detail panel
+  description: >-
+    Clicking an object opens its factual panel and lights everything transitively reachable while
+    the rest dims, at a reach defaulting to one hop (AD-36, AD-3). Covers CAP-13.
+  invoke_dev_with: >-
+    Picking is the only upward path across the map seam and it carries identity keys, not indices
+    or pixel coordinates (AD-36). One gesture, two answers — the panel AND the highlight. The reach
+    defaults to ONE HOP: at two hops more than 150 of 325 objects light on a realistic cluster and
+    the highlight stops distinguishing anything. Note this supersedes the narration in
+    EXPERIENCE.md's Flow 1 step 7, which is stale on this point. The panel is a side panel carrying
+    factual text only — never a tab, modal or full-screen — and never replaces the map. Selecting a
+    duplicated rendering selects the object, not the copy. Hover lifts the hovered contour and
+    nothing else, and nothing in the product may require hover to be discovered.
+- id: "16"
+  title: Filtering by removal
+  description: >-
+    Per-object-type removal, Keep only this at the selection's hop reach, the orphan counter, and
+    the pale context that returns when a filter would empty the map (AD-41, AD-3). Covers CAP-14.
+  invoke_dev_with: >-
+    Filters set a PRESENTATION state; they never remove objects from the scene (AD-41). The
+    highlight dims and the filter removes, and the two dim depths must look visibly different at a
+    glance — if a user cannot tell them apart the whole mechanism collapses. Removing networks
+    removes the zones and the attachment edges; removing stacks removes the outlines and their
+    names and nothing else. An orphan carries no badge, no ring and no colour coding, because
+    marking it abnormal would be a judgement — its dashed contour and its isolation are the whole
+    signal. A filter never re-lays the map.
+- id: "17"
+  title: Search by name and by image tag
+  description: >-
+    Typing lights matches, dims the rest and reframes onto them, matching object names and image
+    tags, and reporting a match a filter has removed rather than hiding it. Covers CAP-15.
+  invoke_dev_with: >-
+    Search reuses the visual language of selection rather than inventing one. There is NO RESULTS
+    LIST — that would be an inventory surface, which the product is not. A single match is also
+    selected, exactly as a click would be; several matches stay lit and the user picks. A match
+    currently filtered out is reported as found and filtered, never silently absent — otherwise
+    search would lie about what the cluster contains, which is the one thing Portolan exists not to
+    do. Search removes nothing and never re-lays the map. No match is said in the chart register
+    and changes nothing on the map.
+- id: "18"
+  title: Display controls and stored preferences
+  description: >-
+    Zone mode, node backdrop, text size, density, palette, theme and the in-product motion stop,
+    with versioned browser-storage preferences (AD-20, AD-3). Covers CAP-16.
+  invoke_dev_with: >-
+    Display controls change how present things are drawn and never the population. Switching zone
+    mode or toggling the node backdrop re-lays the map as VISIBLE MOVEMENT — nothing may fade out
+    and reappear, because the user has to follow objects by eye. Text size and density stay
+    separate first-class controls; density reserves at maximum so it does not become a fourth
+    relayout action. Colour is chosen as a whole predefined palette and never swatch by swatch,
+    because a free picker would let the user break the contrast floors the palettes exist to
+    guarantee. Dark is the default and light is not a fallback. Stored preferences carry a version
+    and are discarded rather than migrated on mismatch. The text-size ceiling is design's to set
+    and is not yours to invent.
+- id: "19"
+  title: Node view and service view
+  description: >-
+    Each view as its own surface with its own layout — machine regions drawn proportionally to what
+    they carry with a floor, and an ego-graph reachable only by isolating a selected service
+    (AD-33). Covers CAP-12.
+  invoke_dev_with: >-
+    A tab switch is a complete change of view, not a filter, and entering a view is a new surface
+    being drawn rather than a relayout of the current one. Node view draws neither network zones
+    nor stack outlines. Proportionality has a floor: a machine carrying nothing still renders as a
+    full region with its header and one line of marginalia — an empty node is information, and it
+    must not shrink to the point of disappearing to make that point. Service view cannot be
+    reached without a subject, so there is no empty-subject state to build.
+- id: "20"
+  title: Honest states
+  description: >-
+    The layered cold load, the in-place staleness veil, the frozen vanished subject, the
+    socket-unreachable teaching screen, the empty cluster and the off-chart viewport (AD-13, AD-14,
+    AD-44). Covers CAP-20.
+  invoke_dev_with: >-
+    THE MAP STAYS. On stale data or a failed survey it pales and desaturates in place while the
+    stamp ages in words — no banner, no overlay, no error screen, no error colour. The detail panel
+    does not take the veil and holds full contrast. The browser has exactly three full-surface
+    states — socket-unreachable, off-chart, and the binding message's register — and no fourth:
+    any other client failure leaves the map standing and pales it, because a product whose central
+    promise is "the map stays" may not replace it with a stack trace. The socket-unreachable screen
+    is the ONLY screen in the product allowed to teach. Cold load draws in layers ending on a
+    distinct settling gesture, so loading and living never look the same. An empty cluster renders
+    the node backdrop even though it is off by default.
+- id: "21"
+  title: The chart legend and chart furniture
+  description: >-
+    The permanent legend band, the graduated bezel and the registration marks, all derived from the
+    scene (AD-35). Covers CAP-17's apparatus half.
+  invoke_dev_with: >-
+    The legend does NOT enumerate the networks present on the chart. FR-63 as first written is
+    arithmetically impossible in the band FR-78, FR-79 and NFR-16 leave, and of the three ways out
+    only "fewer jobs" takes no pixel from a canvas whose bodies already land near 14px; FR-63 has
+    been narrowed accordingly. It decodes the mark families, health and the two grouping languages,
+    and the zone field and detail panel carry the network answer as they already do. Accepted and
+    named cost: the legend travels inside the export without being able to decode that export's
+    zones. The typographic specimen must render without wrapping — wrapping destroys the adjacency
+    that is the specimen's whole purpose. Everything here comes from the scene, so the legend
+    cannot disagree with the map it sits under.
+- id: "22"
+  title: Export and address masking
+  description: >-
+    Literal SVG and PNG export at the current framing, zoom and filters, with the chart apparatus
+    inside it, and masking available for the export and for the screen (AD-34, AD-35). Covers
+    CAP-18 and CAP-19.
+  invoke_dev_with: >-
+    Export is what-you-see-is-what-you-get, with exactly one declared exception and it is the
+    default case: masking is ON for the export and OFF for the screen, so by default the exported
+    frame carries no address while the screen does. Unticking it is one click — no dialog, no
+    warning, no confirmation: the product defaults, it does not judge. Screen and export masking
+    are independent settings; turning one on does not turn the other on. The product states plainly
+    what survives masking and is still identifying — object names, stack names, the shape of the
+    topology — and NEVER implies the export is anonymous. Accepted cost: an export taken from the
+    landing frame ships without the fine labels, because the export is literal.
+- id: "23"
+  title: Packaging, image and deployment
+  description: >-
+    One multi-arch image, the published stack file with its commented exposure options, embedded
+    fonts, a same-origin CSP and tag-driven publication (AD-17, AD-19, AD-21, AD-32, AD-43).
+    Covers CAP-23.
+  invoke_dev_with: >-
+    Default exposure is host mode on 127.0.0.1 plus a `node.role == manager` placement constraint,
+    and the three ways to open it — routing mesh, internal overlay plus reverse proxy, VPN — are
+    COMMENTED directly above the line to uncomment. Do not ship a default reachable from another
+    node: with no authentication in v1 that is precisely the unauthenticated full-topology viewer
+    with one-click export the brief warned against. Named and accepted cost of that default: it
+    puts Portolan out of reach of the executive viewer until someone opens the binding. Air-gapped
+    by construction — no CDN, no external font, no external asset; the CSP admits only the page's
+    own origin and the SSE endpoint accepts same-origin connections only. Configuration is
+    environment variables only, and the refresh interval is NOT among them because it is a UI
+    control. Multi-arch amd64 + arm64. No socket-mediating proxy sidecar in v1; document the
+    whitelist proxy in the README as optional hardening.
+- id: "24"
+  title: Browser smoke tests and chassis accessibility
+  description: >-
+    A closed scope of browser coverage — smoke plus chassis accessibility only — sitting on top of
+    the scene assertions rather than duplicating them (AD-31).
+  invoke_dev_with: >-
+    Scope is deliberately closed and must stay closed: browser-driven end-to-end tests are OUT of
+    v1, because they would put a browser and a GPU back into the verification loop the scene
+    decision exists to keep out, and the cost would be paid on every PR. EXPERIENCE.md's journeys
+    as automated tests are a documented deferral, not an omission to fix here. What the scene
+    assertions already cover must not be re-tested through a browser. One verification stays
+    explicitly manual and by eye: whether four near-identical volume names are visibly different at
+    9px in the shipped face — that is a judgement, not a computation, and design owns it.
