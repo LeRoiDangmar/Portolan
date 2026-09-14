@@ -27,16 +27,6 @@
     exemption set is incomplete and design owns completing it before the gate is first enabled;
     if you hit that, stop and say so rather than guessing the set.
 - id: "3"
-  title: String catalogues, externalised from the first commit
-  description: >-
-    One catalogue per language with no string literal in any component (AD-24), English shipped
-    with French alongside it. Covers CAP-24.
-  invoke_dev_with: >-
-    "From the first commit" is the requirement, which is why this lands before any surface that
-    would otherwise hard-code a string. Chassis strings speak chart and object strings speak
-    Docker (CAP-22); the two vocabularies must not be mixed inside one catalogue entry. Spelling
-    is en-GB — `Reorganise` is a shipped control name, not a typo to correct.
-- id: "4"
   title: The shared graph model package
   description: >-
     The TypeScript types for nodes, networks, volumes, stacks, services, containers and their
@@ -49,38 +39,7 @@
     declared departure from FR-13 as first written and the PRD now carries the revision. An image
     is a detail-panel attribute and never a node. This package may not import anything above it
     and may not contain a docker-ism beyond the three coupling surfaces NFR-6 permits.
-- id: "5"
-  title: The Docker collector
-  description: >-
-    A read-only-by-construction adapter over the directly mounted socket that surveys one swarm
-    into the model, imposing a total order before the model sees it, plus the declared engine API
-    floor (AD-7, AD-15, AD-16, AD-27). Covers CAP-1 and CAP-3.
-  invoke_dev_with: >-
-    Read-only is by construction, not by discipline: the underlying HTTP client must refuse every
-    method other than GET, so that "we wrote no writes" becomes "we cannot write". `:ro` on a
-    socket mount does not restrict the Docker API and nothing may pretend otherwise. The total
-    ordering in AD-7 is what makes the layout's determinism reachable downstream — without it,
-    map ordering leaks frame-to-frame nondeterminism into positions. Use recorded real Docker API
-    payloads as fixtures and never mix the two fixture kinds (AD-27). Two engine behaviours bear
-    on what you can read and are named in architecture-decisions.md.
-- id: "6"
-  title: The server, SSE transport and survey cadence
-  description: >-
-    HTTP plus SSE carrying a full snapshot per survey, decoupled survey and render cadences, the
-    last-good-survey replay, the three exhaustive tab-open branches, the serve-testing healthcheck,
-    structured stdout logging and the startup binding message (AD-11 to AD-14, AD-19, AD-21, AD-22,
-    AD-44, AD-45). Covers CAP-2 and CAP-21.
-  invoke_dev_with: >-
-    No deltas — a full snapshot per survey, decided against a reconciliation protocol that would be
-    paid for with no measured gain at 400 objects. The server never serves emptiness: on a failed
-    survey it keeps serving the last good one with its age, and that is what makes the client-side
-    staleness veil possible at all. The healthcheck tests that Portolan SERVES, not that the survey
-    succeeds — otherwise Swarm restarts Portolan at every socket hiccup and the map being read
-    disappears, which is exactly what the honest-states contract exists to prevent. CAP-21 is a
-    startup LOG LINE and not a screen: a server the browser cannot reach cannot serve the screen
-    saying so. Log the bound address, the node, and what must change to reach it from elsewhere,
-    pointing at the stack file's commented lines. The server writes nothing to disk, anywhere.
-- id: "7"
+- id: "4"
   title: The layout stage
   description: >-
     A pure deterministic function of (model, previous positions, seed, mode) producing positions in
@@ -95,7 +54,7 @@
     The server never holds positions. Canvas pixels never enter this stage (AD-40). View state has
     no write path here: only Reorganise, the zone-mode switch and the node-backdrop toggle may call
     the layout, and no survey, filter, selection, search or panel open may move anything.
-- id: "8"
+- id: "5"
   title: The scene description
   description: >-
     Model plus positions to a resolution-independent scene — zones as fields, bodies as path data,
@@ -109,17 +68,25 @@
     (AD-38). The scene is a function of the reading level, not of the camera (AD-39). Marks and
     type live in screen space and do not scale with the canvas transform — without that, a 9.5px
     label renders at about 2.4px in the very frame the product is judged on.
-- id: "9"
+- id: "6"
   title: Synthetic cluster generator and the measurement harness
   description: >-
     Generate a 396-object cluster at reference scale, produce the scene on the 884px operative
     canvas, and report the four distributions — body diameter, mark-rail occupation, stub length,
     edge contrast over the worst composited field — as a CI ratchet (AD-29, AD-28, AD-30).
-    Covers CAP-25.
+    Covers CAP-25, and is the earliest point the landing-frame arithmetic can be known.
   done_checkpoint: true
   invoke_dev_with: >-
-    The spine is explicit that this must run BEFORE the first raster-screen commit, not alongside
-    it: that commit decides the screen backend whether or not anyone writes it down. Measure on
+    This story is placed as early as the dependencies allow, because everything after it is
+    conditioned on what it reports. It needs no Docker and no browser: the generator synthesises
+    objects straight into the model, and AD-27 keeps those fixtures separate from the collector's
+    recorded ones. The spine is explicit that it must run BEFORE the first raster-screen commit,
+    not alongside it: that commit decides the screen backend whether or not anyone writes it down.
+    Note what this story does and does not settle. It settles the ARITHMETIC — the four
+    distributions, and with them mark sizing at the landing level, the luminance clamp and the
+    backend choice. It does not settle whether the frame READS; that judgement needs a real cluster
+    of the reference order, which the PRD insists is not a three-container lab, and is not
+    reachable until the collector, the server and the screen rasteriser exist. Measure on
     884px, the real width once the panel column is reserved — not the 1204px the PRD's arithmetic
     used — and against 396 objects, not the 325 the optimistic figures were computed on. The
     harness FIXES NO THRESHOLD: the PRD deliberately refuses to invent them and neither the spine
@@ -127,6 +94,53 @@
     repaired and then silently re-degraded by a later PR. NFR-8 is deliberately NOT a CI gate
     (AD-30) — do not turn it into one. Stop when the four distributions are reported; reading them
     and deciding what yields is the human's call at the checkpoint after this story.
+- id: "7"
+  title: String catalogues, externalised from the first commit
+  description: >-
+    One catalogue per language with no string literal in any component (AD-24), English shipped
+    with French alongside it. Covers CAP-24.
+  invoke_dev_with: >-
+    "From the first commit" is the requirement, and it is met here rather than earlier because
+    nothing before this story carries a catalogue string: the product's first one is the
+    engine-too-old message the next story brings. This must land before that, and before any
+    chassis surface that would otherwise hard-code a string. Chassis strings speak chart and object strings speak
+    Docker (CAP-22); the two vocabularies must not be mixed inside one catalogue entry. Spelling
+    is en-GB — `Reorganise` is a shipped control name, not a typo to correct.
+- id: "8"
+  title: The Docker collector
+  description: >-
+    A read-only-by-construction adapter over the directly mounted socket that surveys one swarm
+    into the model, imposing a total order before the model sees it, plus the declared engine API
+    floor (AD-7, AD-15, AD-16, AD-27). Covers CAP-1 and CAP-3.
+  invoke_dev_with: >-
+    This sits after the measurement gate deliberately: the harness runs on synthetic fixtures, so
+    nothing upstream of it needed a live cluster. What this story starts is the second half of the
+    legibility question — the one that needs real objects in front of real eyes.
+    Read-only is by construction, not by discipline: the underlying HTTP client must refuse every
+    method other than GET, so that "we wrote no writes" becomes "we cannot write". `:ro` on a
+    socket mount does not restrict the Docker API and nothing may pretend otherwise. The total
+    ordering in AD-7 is what makes the layout's determinism reachable downstream — without it,
+    map ordering leaks frame-to-frame nondeterminism into positions. Use recorded real Docker API
+    payloads as fixtures and never mix the two fixture kinds (AD-27). Two engine behaviours bear
+    on what you can read and are named in architecture-decisions.md.
+- id: "9"
+  title: The server, SSE transport and survey cadence
+  description: >-
+    HTTP plus SSE carrying a full snapshot per survey, decoupled survey and render cadences, the
+    last-good-survey replay, the three exhaustive tab-open branches, the serve-testing healthcheck,
+    structured stdout logging and the startup binding message (AD-11 to AD-14, AD-19, AD-21, AD-22,
+    AD-44, AD-45). Covers CAP-2 and CAP-21.
+  invoke_dev_with: >-
+    Also placed after the measurement gate, for the same reason as the collector before it.
+    No deltas — a full snapshot per survey, decided against a reconciliation protocol that would be
+    paid for with no measured gain at 400 objects. The server never serves emptiness: on a failed
+    survey it keeps serving the last good one with its age, and that is what makes the client-side
+    staleness veil possible at all. The healthcheck tests that Portolan SERVES, not that the survey
+    succeeds — otherwise Swarm restarts Portolan at every socket hiccup and the map being read
+    disappears, which is exactly what the honest-states contract exists to prevent. CAP-21 is a
+    startup LOG LINE and not a screen: a server the browser cannot reach cannot serve the screen
+    saying so. Log the bound address, the node, and what must change to reach it from elsewhere,
+    pointing at the stack file's commented lines. The server writes nothing to disk, anywhere.
 - id: "10"
   title: The SVG rasteriser
   description: >-
