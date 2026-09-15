@@ -72,6 +72,15 @@ describe('the workspace is the spine’s Structural Seed', () => {
     expect(existsSync(here(`../${spec.dir}/src/index.ts`))).toBe(true);
   });
 
+  it.each(workspaces)('%s keeps its colocated tests out of the emitted package', (_name, spec) => {
+    // Without this, `src/x.test.ts` is compiled into `dist/x.test.js` carrying a
+    // top-level `vitest` import, inside a package whose `files` is `["dist"]` — and lint,
+    // typecheck, build and every test stay green while it ships. Tests are typechecked by
+    // tsconfig.tools.json instead, which is why removing the exclusion breaks nothing else.
+    const config = readJson(`../${spec.dir}/tsconfig.json`) as { exclude?: string[] };
+    expect(config.exclude).toContain('src/**/*.test.ts');
+  });
+
   it('is referenced in full by the solution tsconfig', () => {
     const solution = readJson('../tsconfig.json') as { references: { path: string }[] };
     expect(solution.references.map((reference) => reference.path)).toEqual(
