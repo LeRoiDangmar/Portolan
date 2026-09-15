@@ -1,7 +1,8 @@
 ---
 title: "Zone palette under colour-vision deficiency — measurement and options"
-status: for-decision
+status: decided
 created: 2026-09-14
+updated: 2026-09-15
 owner: design
 covers: NFR-13, NFR-11
 targets: ./DESIGN.md
@@ -74,84 +75,86 @@ palette's *existing* saturation the reachable minimum is ≈5.1 light and ≈3.7
 Raising chroma buys little and costs the register fast: the whole span from C* 12 to C* 28 — muted
 chart to poster — buys about 3 ΔE.
 
-## 4. Candidate values
+## 4. Decisions taken, 2026-09-15
 
-Optimised at C* ≤ 12 against **both** deuteranopia and protanopia (`DESIGN.md` claims protanopia
-separates at least as well; holding both keeps that claim true), with ≥6 ΔE trichromat headroom.
+**The threshold — ratified.**
 
-**Dark** — min ΔE00: deuteranopia **3.77**, protanopia 3.66, trichromat 6.62
+> **ΔE00 ≥ 3.0** between any two simulated zone tints, under **both deuteranopia and protanopia**,
+> in both palettes.
 
-| Token | Candidate | C* | Hue |
-|---|---|---|---|
-| `zone-tint-1` | `#261A14` | 8.1 | 53 |
-| `zone-tint-2` | `#1A1816` | 1.8 | 74 |
-| `zone-tint-3` | `#1E1C08` | 11.9 | 103 |
-| `zone-tint-4` | `#062020` | 10.3 | 197 |
-| `zone-tint-5` | `#101E26` | 8.0 | 246 |
-| `zone-tint-6` | `#161C2C` | 11.9 | 282 |
+Holding protanopia as well as deuteranopia goes beyond `NFR-13`'s letter, and it is what keeps
+`DESIGN.md`'s claim — *"protanopia separates at least as well in every case"* — true by gate rather
+than by assertion. It costs nothing: protanopia is the binding case in the light palette and
+deuteranopia in the dark, and both clear 3.0 at the existing register.
 
-**Light** — min ΔE00: deuteranopia **3.27**, protanopia 3.35, trichromat 6.42
+Three is a **floor, not comfort**, and the honest note stands: the ceiling at any register this
+product would ship is about 6.7, so six zone hues will never be comfortably separable to a
+dichromate. That is not a new concession — `NFR-14` already puts network identity on the octave
+pattern and the written names, and `FR-65` calls the channel *partly repaired*. This measurement
+supports that position and removes an outright collision from underneath it.
 
-| Token | Candidate | C* | Hue |
-|---|---|---|---|
-| `zone-tint-1-light` | `#E4DCD8` | 3.6 | 55 |
-| `zone-tint-2-light` | `#ECE2CC` | 12.0 | 91 |
-| `zone-tint-3-light` | `#E0E4D6` | 7.4 | 121 |
-| `zone-tint-4-light` | `#DAE2E2` | 2.8 | 199 |
-| `zone-tint-5-light` | `#CCE8EE` | 10.0 | 217 |
-| `zone-tint-6-light` | `#DCE2F8` | 11.6 | 281 |
+**The exemption — ratified, and two proposals withdrawn.**
 
-**Read these as a demonstration that the numbers are reachable, not as a proposed palette.** Two
-objections are already visible and both are design's to answer: the hue rotation is uneven, and two
-entries (`zone-tint-2` at C* 1.8, `zone-tint-4-light` at C* 2.8) are effectively neutral greys, which
-is a strange thing to call a hue in a six-hue rotation. A hand-tuned set at the same chroma ceiling
-should reach the same ΔE band while keeping the rotation legible as a rotation. The isolines
-(`zone-isoline-1…6`) must be re-derived from whatever tints are chosen; they are not re-computed here.
+Only one of the three structural exemptions proposed on 2026-09-14 is needed, and it is the one
+ratified:
 
-## 5. `NFR-13` needs a threshold, and it does not have one
+> **The bubble contour over a zone tint** (2.7–2.9 / 2.7–3.0) is **not** held to the 3:1 edge floor.
+> That floor binds the two *edge kinds* — the marks that carry relationships. A body's own outline is
+> not an edge. `DESIGN.md` argues this and flags it `[ASSUMPTION]`, *"nobody stated it"*. This states
+> it, and it tells whoever writes the `AD-28` gate not to classify the contour as an edge.
 
-*"Mutually separable"* names no number, so the gate cannot be written. Proposed, for ratification:
+The other two were withdrawn after being measured rather than assumed — the original proposal was
+wrong on both:
 
-> **ΔE00 ≥ 3.0** between any two simulated tints, under both deuteranopia and protanopia, in both
-> palettes.
+| Withdrawn | Why it is not needed |
+| --- | --- |
+| Unavailable control text | `ink-3` measures **4.91–5.69:1** on every chassis surface, against the 4.5:1 floor. It **passes**. `DESIGN.md`'s "exempt from the text floor" is the general convention for disabled controls, not a measurement below the floor. |
+| Zone tint over canvas | `AD-28` gates five ratios — identifier channel, chassis, health, both edge kinds, focus ring. A tint against its ground is none of them, so nothing checks it and nothing needs excusing. |
 
-Three is defensible for *large fields* — zone tints are the largest coloured areas on the chart, and
-large-area discrimination beats small-patch — and it is where the existing register lands. It is also
-honest about what it is: **a floor, not comfort.** Even at C* 28 the ceiling is ~6.7, so the six zone
-hues will never be comfortably separable to a dichromat at any register this product would ship.
+**One clarification, still worth writing into the token file.** `NFR-11` already exempts the staleness
+veil and says the health mark misses its 4:1 floor under it. `DESIGN.md` puts the figure at **2.1:1 at
+full veil**. Recording the number rather than the category lets the gate assert a value.
 
-That is not a new concession. `NFR-14` already states that network identity is carried by the octave
-pattern and by written names rather than by colour, and `FR-65` calls the network channel *partly
-repaired*. This measurement supports that position rather than undermining it — it just puts a number
-on how partial the repair is, and removes an outright collision from underneath it.
+## 5. Recommended tint values
 
-## 6. The `NFR-11` exemption set, completed
+Re-optimised 2026-09-15 with the aesthetic constraints the first candidate set lacked: an even hue
+rotation (six slots, ~60° apart, best global offset searched) and a chroma floor, so no entry is a
+neutral grey pretending to be a hue. Held to C\* ≤ 12 — the shipped palette's own ceiling — so the
+register does not move.
 
-`NFR-11` names **three** exemptions, all of them *state-based*: the staleness veil, the reachability
-dim, the empty-filter pale context. `AD-28` makes the contrast gate blocking, so any combination that
-sits below its floor by design and is *not* in the set turns the gate red on correct behaviour.
+**Dark** — rotation offset 45°; min ΔE00 deuteranopia **3.38**, protanopia 3.39, normal vision 7.53
 
-Auditing `DESIGN.md`'s own measured tables, **three structural exemptions are missing**:
+| Token | Value | C\* | Hue | Contrast vs ground |
+|---|---|---|---|---|
+| `zone-tint-1` | `#261A12` | 8.9 | 59° | 1.183 |
+| `zone-tint-2` | `#1E1802` | 11.8 | 93° | 1.134 |
+| `zone-tint-3` | `#141A16` | 4.3 | 155° | 1.136 |
+| `zone-tint-4` | `#081C22` | 8.7 | 229° | 1.146 |
+| `zone-tint-5` | `#121826` | 10.7 | 281° | 1.131 |
+| `zone-tint-6` | `#201A1E` | 4.2 | 337° | 1.173 |
 
-| Missing exemption | Measured | Why it is deliberate |
-|---|---|---|
-| **Bubble contour over a zone tint** | 2.7–2.9 / 2.7–3.0 against the 3:1 edge floor | The edge floor binds the two *edge* kinds, the marks that carry relationships. A body's own outline is not an edge. `DESIGN.md` argues this and flags it `[ASSUMPTION]` — *"it follows the file's own distinction, but nobody stated it."* This is the statement. |
-| **Zone tint over canvas** | 1.18 / 1.13 against 3:1 | Deliberately near-invisible: *a coastline, not a border*. A zone is a field noticed peripherally. Exempting it is the whole point of the iso-luminant rule. |
-| **Unavailable control text** | `ink-3` on `hairline` border, below the 4.5:1 chassis floor | A disabled control, exempt by the convention every disabled control is exempt by. Shown rather than hidden so the toolbar never reflows, which is why it exists at all. |
+**Light** — rotation offset 51°; min ΔE00 deuteranopia **3.81**, protanopia 3.74, normal vision 7.84
 
-**One clarification rather than an addition.** `NFR-11` already exempts the staleness veil and says
-the health mark does not reach its 4:1 floor under it. `DESIGN.md` puts the figure at **2.1:1 at full
-veil**. Worth writing into the set as a value so the gate asserts a number rather than a category.
+| Token | Value | C\* | Hue | Contrast vs ground |
+|---|---|---|---|---|
+| `zone-tint-1-light` | `#F2D8DE` | 10.0 | 2° | 1.180 |
+| `zone-tint-2-light` | `#EADCD4` | 6.6 | 59° | 1.178 |
+| `zone-tint-3-light` | `#E0E0CA` | 11.4 | 109° | 1.178 |
+| `zone-tint-4-light` | `#C8E8E2` | 11.6 | 183° | 1.148 |
+| `zone-tint-5-light` | `#CEE4EC` | 8.5 | 228° | 1.160 |
+| `zone-tint-6-light` | `#D8DEF4` | 11.6 | 281° | 1.179 |
 
-**Not exemptions, recorded so nobody adds them:** the stack outline at 3.8–4.1 *meets* 3:1 and is
-merely below both edge kinds on purpose — that is an ordering, not a floor breach; and the composite
-table's ✗ rows are pre-clamp failures that `{opacity.zone-field-cap}` repairs, not states to excuse.
+Against the shipped set: the dark worst pair goes from 1.30 to 3.38, the light from 0.00 to 3.81, and
+normal-vision separation improves too (6.4–6.6 → 7.5–7.8). Every tint stays inside the 1.13–1.19
+iso-luminant band, so every edge floor measured against a single tint survives unchanged.
 
-## 7. What needs a decision
+**Still to do before these are normative:** the isolines (`zone-isoline-1…6` and their `-light`
+counterparts) must be re-derived from whichever tints land, and the `zone blob` and
+`pastille-network` values checked against their own floors. This file does not re-compute them.
 
-1. **The ΔE00 ≥ 3.0 threshold for `NFR-13`** — ratify, or set another number.
-2. **The tint values** — hand-tune at C* ≤ 12, or accept a computed set, or raise the chroma ceiling
-   and accept the register shift.
-3. **The three structural exemptions** — ratify into `NFR-11` so `AD-28`'s gate can be written.
+## 6. What is now unblocked
 
-Items 1 and 3 unblock the tokens story. Item 2 can follow, as long as whatever lands satisfies 1.
+The tokens story can declare a complete exemption set and a numeric threshold, so the `AD-28` gate
+can be **written** rather than deferred. It will still start red on the shipped tints until the values
+above (or design's own) are applied — red for the reason `AD-28` calls the gate working, not the
+reason it calls the gate broken.
