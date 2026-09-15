@@ -1,0 +1,35 @@
+{
+  "note": [
+    "The dependency direction of ARCHITECTURE-SPINE.md, as data.",
+    "An entry's `imports` is the complete set of Portolan packages that package may import.",
+    "There is no arrow back up, anywhere.",
+    "Three things are generated from this file and one test guards it:",
+    "  - eslint.config.mjs builds a per-package no-restricted-imports rule from it;",
+    "  - vite.config.ts builds the browser alias map from it;",
+    "  - test/envelope.test.ts asserts every package.json and tsconfig.json agrees with it,",
+    "    and that the package list still matches the spine's Structural Seed.",
+    "Editing this file without editing the package manifests it describes fails the test."
+  ],
+  "workspaces": {
+    "tokens": { "dir": "packages/tokens", "side": "shared", "imports": [] },
+    "i18n": { "dir": "packages/i18n", "side": "browser", "imports": [] },
+    "model": { "dir": "packages/model", "side": "shared", "imports": [] },
+    "collector": { "dir": "packages/collector", "side": "server", "imports": ["model"] },
+    "server": { "dir": "packages/server", "side": "server", "imports": ["collector", "model"] },
+    "layout": { "dir": "packages/layout", "side": "browser", "imports": ["model", "tokens"] },
+    "scene": {
+      "dir": "packages/scene",
+      "side": "browser",
+      "imports": ["model", "layout", "tokens", "view-state"]
+    },
+    "raster-svg": { "dir": "packages/raster-svg", "side": "browser", "imports": ["scene"] },
+    "raster-screen": { "dir": "packages/raster-screen", "side": "browser", "imports": ["scene"] },
+    "view-state": { "dir": "packages/view-state", "side": "browser", "imports": ["layout"] },
+    "chrome": {
+      "dir": "packages/chrome",
+      "side": "browser",
+      "imports": ["model", "tokens", "i18n", "view-state"]
+    },
+    "harness": { "dir": "harness", "side": "node", "imports": ["scene", "layout"] }
+  }
+}

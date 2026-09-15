@@ -1,0 +1,24 @@
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.vitest/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise
+.DS_Store
+*.swp
+
+# Emitted beside the boundary file when a forbidden import pulls it into a build.
+# That build fails, so this output is never a deliverable.
+boundary/*.js
+boundary/*.d.ts
+boundary/*.map

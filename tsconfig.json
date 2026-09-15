@@ -1,0 +1,41 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/tokens"
+    },
+    {
+      "path": "./packages/i18n"
+    },
+    {
+      "path": "./packages/model"
+    },
+    {
+      "path": "./packages/collector"
+    },
+    {
+      "path": "./packages/server"
+    },
+    {
+      "path": "./packages/layout"
+    },
+    {
+      "path": "./packages/scene"
+    },
+    {
+      "path": "./packages/raster-svg"
+    },
+    {
+      "path": "./packages/raster-screen"
+    },
+    {
+      "path": "./packages/view-state"
+    },
+    {
+      "path": "./packages/chrome"
+    },
+    {
+      "path": "./harness"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": [],
+    "jsx": "react-jsx",
+    "paths": {
+      "@portolan/model": ["../../packages/model/src/index.ts"],
+      "@portolan/tokens": ["../../packages/tokens/src/index.ts"],
+      "@portolan/i18n": ["../../packages/i18n/src/index.ts"],
+      "@portolan/view-state": ["../../packages/view-state/src/index.ts"],
+      "@portolan/*": ["../../boundary/there-is-no-arrow-back-up.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../../packages/model"
+    },
+    {
+      "path": "../../packages/tokens"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/view-state"
+    }
+  ]
+}

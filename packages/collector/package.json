@@ -1,0 +1,23 @@
+{
+  "name": "@portolan/collector",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Docker adapter — GET-only, pinned API version, total ordering (AD-7, AD-15).",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@portolan/model": "*"
+  }
+}

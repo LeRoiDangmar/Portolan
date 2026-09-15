@@ -1,0 +1,15 @@
+{
+  "$comment": "Root-level tooling and tests. Typechecked by `npm run typecheck` alongside the twelve workspaces, but emits nothing — Vite and Vitest transform these themselves. Not part of the solution build, so it is not `composite`.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["es2024"],
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true
+  },
+  "include": ["vite.config.ts", "test/**/*.ts"]
+}
