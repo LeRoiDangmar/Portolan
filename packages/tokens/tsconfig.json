@@ -1,4 +1,5 @@
 {
+  "$comment": "AD-23 wants one token file read by CSS, TypeScript and a Node test runner. Node reads these sources directly with type stripping — which `erasableSyntaxOnly` in the base config already guarantees is possible — and that needs `./x.ts` import specifiers; `rewriteRelativeImportExtensions` turns them into `./x.js` on emit, so dist/ is still ordinary ESM. Tests are excluded from the build and typechecked by tsconfig.tools.json instead, so the emitted package carries no test and no vitest import.",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
@@ -6,9 +7,12 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "lib": ["es2024"],
     "types": [],
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "paths": {
       "@portolan/*": ["../../boundary/there-is-no-arrow-back-up.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

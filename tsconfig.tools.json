@@ -11,5 +11,5 @@
     "declarationMap": false,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "test/**/*.ts"]
+  "include": ["vite.config.ts", "test/**/*.ts", "packages/*/src/**/*.test.ts"]
 }
