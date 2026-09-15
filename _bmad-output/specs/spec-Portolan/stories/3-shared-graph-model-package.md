@@ -2,7 +2,7 @@
 title: 'The shared graph model package'
 type: 'feature'
 created: '2026-09-15'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '3d849d791e54a15cd8f487a759f6738b91d78f5d'
