@@ -85,6 +85,47 @@ describe('the silhouette is a pure function of the identity key (AD-6)', () => {
     expect(silhouette.length).toBe(2);
   });
 
+  /**
+   * The matrix asks for byte-identity ACROSS PROCESSES, and neither test above reaches
+   * that far: both re-derive their expectation inside the run they are checking. These
+   * digests were computed once and committed — so the assertion is made by a process that
+   * has already exited, which is the only form the claim can take. They cover every number
+   * in the contour at once: the 28 transcribed bearings, the seeded amplitudes, the
+   * Catmull–Rom control points and the core rectangle, each rendered by `JSON.stringify`,
+   * whose output for a double ECMAScript specifies exactly.
+   *
+   * They also close the story's top stated risk. The `shape.bubble` constants are
+   * transcribed rather than imported, because `packages/model` imports nothing (AD-2), and
+   * nothing else in CI would catch a divergence from `packages/tokens/src/shape.ts`.
+   *
+   * A failure here is never a number to update. It means the contour moved, and with it
+   * every silhouette a user has learned to recognise (AD-6) — so the change that moved it
+   * is what needs justifying, not this table. They were last recomputed when the review
+   * found the core rectangle following the seeded points instead of the base radius.
+   */
+  const GOLDEN_CONTOURS: readonly (readonly [IdentityKey, number])[] = [
+    ['container:blog/web/3', 142363059],
+    ['container:blog/web/4', 988808888],
+    ['container:/adhoc/1', 1714257457],
+    ['volume:web', 234987565],
+    ['network:web', 3661683882],
+    ['volume:pgdata', 1094463131],
+    ['volume:pg-data', 1921239030],
+  ];
+
+  it.each(GOLDEN_CONTOURS)('reproduces the committed contour for %s', (key, digest) => {
+    expect(fnv1a(JSON.stringify(silhouette(key, BASE_RADIUS.container)))).toBe(digest);
+  });
+
+  it('would report a drift, so the digests above are evidence and not decoration', () => {
+    const moved = silhouette('volume:web', BASE_RADIUS.container + 1);
+    expect(fnv1a(JSON.stringify(moved))).not.toBe(234987565);
+  });
+
+  it('covers every key the fixture set names, so no contour is pinned by accident', () => {
+    expect(GOLDEN_CONTOURS.map(([key]) => key)).toEqual([...KEYS]);
+  });
+
   it('gives a volume and a network of the same name two different contours', () => {
     const volume = silhouette(volumeKey('web'), BASE_RADIUS.volume);
     const network = silhouette(networkKey('web'), BASE_RADIUS.volume);
