@@ -8,6 +8,12 @@
 //
 // AD-23's obligation on this namespace is that the face is pinned here and embedded in
 // the image, so the thing NFR-20 is verified on by eye is the thing that ships.
+//
+// The role keys stay kebab-case, as every other namespace's do, but the PROPERTY keys
+// inside a role are camelCase — `fontFamily`, `fontSize`, `letterSpacing` — because that
+// is how DESIGN.md writes them and this file is a transcription. The CSS generator
+// lower-cases them on the way out, exactly as it lowers `rounded.DEFAULT`, so they emit
+// as `--portolan-type-mono-font-family`.
 
 export const type = {
   mono: {

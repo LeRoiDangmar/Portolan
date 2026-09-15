@@ -25,8 +25,11 @@
  *
  * Two kinds of red, and only one is the failure AD-28 argues against: red because the
  * palette is genuinely wrong is the gate working; red because a correct build trips an
- * exemption the set does not name is the gate broken. The exemption set was completed
- * and ratified in `palette-cvd-analysis.md` §4 before this gate was first enabled.
+ * exemption the set does not name is the gate broken. `palette-cvd-analysis.md` §4
+ * ratified the set on 2026-09-15 and called it complete — but it did not sweep the
+ * network pastille family, which is where this gate's first red landed, so which of the
+ * two kinds that red is remains design's to rule on. The set is as complete as design
+ * has declared it, not as complete as the first run proved it to be.
  */
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -115,7 +118,32 @@ export const audit = ({
   }
 
   const exemptionFindings = [];
+  const ruleIds = new Set(floors.map((rule) => rule.id));
   for (const entry of exempt) {
+    // The exemption set is data design edits by hand, and every mistake in it is an
+    // exemption that still LOOKS measured in the report while checking something else
+    // or nothing at all. AD-28 makes the set the thing that keeps a real failure from
+    // being mistaken for a false one, so each of these throws rather than degrades.
+    if (!ruleIds.has(entry.from)) {
+      throw new Error(
+        `Exemption ${entry.id} is exempt from "${entry.from}", which is not a gated rule. ` +
+          `Expected one of: ${[...ruleIds].join(', ')}.`,
+      );
+    }
+    if (entry.measure.kind !== 'pair' && entry.measure.kind !== 'veiled-pair') {
+      throw new Error(
+        `Exemption ${entry.id} declares measure kind "${entry.measure.kind}", which this gate ` +
+          'does not know how to compute. Add it to `audit` before declaring it.',
+      );
+    }
+    if (entry.measure.kind === 'veiled-pair') {
+      const { alpha } = entry.measure;
+      if (typeof alpha !== 'number' || !(alpha >= 0 && alpha <= 1)) {
+        throw new Error(
+          `Exemption ${entry.id} declares a veil alpha of ${alpha}. It must be a number in 0..1.`,
+        );
+      }
+    }
     for (const palette of palettes) {
       for (const pair of entry.measure.pairs) {
         let foreground = value(colours, pair.foreground, palette);

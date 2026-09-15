@@ -12,9 +12,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./generated/tokens.css": "./generated/tokens.css",
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "generated"
   ]
 }

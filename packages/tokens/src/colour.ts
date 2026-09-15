@@ -9,7 +9,14 @@
 // AD-23 moved normativity on values from DESIGN.md to this file. DESIGN.md documents
 // the intent; this is what the product is measured against.
 //
-// ONE DEPARTURE FROM DESIGN.md, and it is the story's named decision:
+// THREE DEPARTURES FROM DESIGN.md ACROSS THE TOKEN FILE, each named where it lives:
+//   1. the twelve zone tints below, per `palette-cvd-analysis.md` §5 (NFR-13);
+//   2. `shape.bubble.silhouette.seed`, which follows AD-6's identity key rather than
+//      DESIGN.md's and FR-13's Docker ID;
+//   3. `density.scale.affects`, which drops `spacing.cell-clearance` per AD-8.
+// The first is this file's; the other two are annotated in place in their own files.
+//
+// THIS FILE'S DEPARTURE, and it is the story's named decision:
 // `zone-tint-1…6` and their light twins are NOT DESIGN.md's shipped values. Those are
 // the NFR-13 defect — light tints 1 and 3 simulate to a byte-identical `#E2E2EC` under
 // deuteranopia, and the dark palette has three pairs below ΔE00 1.6, which no upstream

@@ -76,26 +76,72 @@ export const isBareValue = (text) => {
   return depth === 0;
 };
 
-/** One leaf value, as CSS. */
-export const cssValue = (value) => {
-  if (typeof value === 'number') return String(value);
-  const text = String(value);
-  return isBareValue(text) ? text : `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+/**
+ * Whether a string carries a C0/C1 control character or a newline. Written as a scan
+ * rather than a regular expression on purpose: a character class of control codes is
+ * what `no-control-regex` exists to catch, and Prettier rewrites the escapes into the
+ * literal bytes, which is how four NUL separators once made a source file read as binary.
+ */
+const hasControlCharacter = (text) => {
+  for (const character of text) {
+    const code = character.codePointAt(0);
+    if (code <= 0x1f || (code >= 0x7f && code <= 0x9f)) return true;
+  }
+  return false;
+};
+
+/**
+ * One leaf value, as CSS.
+ *
+ * A newline or a control character would end the declaration mid-string and leave the
+ * rest of the block inside an unterminated CSS string, so it is refused rather than
+ * escaped: the token file is authored prose, and a line break in a token value is an
+ * authoring mistake to fix at the source, not a shape the generator should normalise
+ * away.
+ */
+export const cssValue = (value, property = 'a token') => {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error(`${property}: ${value} is not a CSS value.`);
+    return String(value);
+  }
+  if (typeof value !== 'string') {
+    throw new Error(
+      `${property}: a token leaf must be a string or a finite number, not ${
+        Array.isArray(value) ? 'an array' : `a ${value === null ? 'null' : typeof value}`
+      }. Arrays and nested nulls have no custom-property form.`,
+    );
+  }
+  if (hasControlCharacter(value)) {
+    throw new Error(
+      `${property}: the value contains a newline or control character, which would leave an ` +
+        'unterminated CSS string. Fix it in packages/tokens/src.',
+    );
+  }
+  return isBareValue(value) ? value : `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 };
 
 /** Depth-first flattening of a namespace into `[property, value]` pairs. */
 const flatten = (value, path, out) => {
+  if (Array.isArray(value)) {
+    throw new Error(`${PREFIX}-${path.join('-')}: an array has no custom-property form.`);
+  }
   if (value !== null && typeof value === 'object') {
     for (const [key, child] of Object.entries(value)) flatten(child, [...path, kebab(key)], out);
     return out;
   }
-  out.push([`${PREFIX}-${path.join('-')}`, cssValue(value)]);
+  const property = `${PREFIX}-${path.join('-')}`;
+  out.push([property, cssValue(value, property)]);
   return out;
 };
 
 /**
  * The two blocks of declarations: everything at `:root`, and the light palette's
  * overrides. Exported so the tests can read the same structure the file is written from.
+ *
+ * Two keys that kebab to the same property name would emit the same declaration twice
+ * and the cascade would silently keep the last — so a collision throws. `kebab` lowers
+ * case and folds underscores, which makes it easy to reach by accident: `fontFamily`
+ * and `font-family` in one namespace are one property.
  */
 export const declarations = () => {
   const dark = [];
@@ -104,12 +150,27 @@ export const declarations = () => {
     if (namespace === 'colour') {
       for (const [token, palette] of Object.entries(tokens.colour)) {
         const property = `${PREFIX}-colour-${kebab(token)}`;
-        dark.push([property, cssValue(palette.dark)]);
-        light.push([property, cssValue(palette.light)]);
+        dark.push([property, cssValue(palette.dark, property)]);
+        light.push([property, cssValue(palette.light, property)]);
       }
       continue;
     }
     flatten(tokens[namespace], [namespace], dark);
+  }
+  for (const [block, entries] of [
+    [':root', dark],
+    [LIGHT_SELECTOR, light],
+  ]) {
+    const seen = new Set();
+    for (const [property] of entries) {
+      if (seen.has(property)) {
+        throw new Error(
+          `${property} is declared twice under ${block}. Two token keys kebab to one custom ` +
+            'property name, and the cascade would keep only the last. Rename one in packages/tokens/src.',
+        );
+      }
+      seen.add(property);
+    }
   }
   return { dark, light };
 };
@@ -125,8 +186,10 @@ const HEADER = `/*
  * palette is a sibling block under ${LIGHT_SELECTOR}, because light is
  * first-class rather than derived.
  *
- * The values are DESIGN.md's, with one named exception: the twelve zone tints are
- * palette-cvd-analysis.md §5's re-optimised register, which is what clears NFR-13.
+ * The values are DESIGN.md's, with three named departures, each annotated in the token
+ * file it lives in: the twelve zone tints follow palette-cvd-analysis.md §5, which is
+ * what clears NFR-13; shape.bubble.silhouette.seed follows AD-6's identity key rather
+ * than the Docker ID; density.scale.affects drops cell-clearance per AD-8.
  */`;
 
 /** The complete file, formatted by the project's own Prettier configuration. */
@@ -144,18 +207,86 @@ export const render = async () => {
  * each colour token is declared twice, once per palette, so a name alone would let a
  * dark value be compared against a light one — and the check would then report the
  * wrong property, or none at all.
+ *
+ * It scans rather than reading line by line, because Prettier wraps a long value across
+ * several lines and a line-anchored parser simply does not see those declarations. They
+ * would then never enter the comparison, and drift inside one would fall through to the
+ * line-number fallback instead of being named — which is the opposite of what the drift
+ * check promises. The scan is string-aware for the same reason the emitter quotes prose:
+ * token values carry semicolons and braces inside their strings.
  */
 const parseDeclarations = (css) => {
   const found = [];
-  let selector = '(no selector)';
-  for (const line of css.split('\n')) {
-    const opened = /^(\S[^{]*?)\s*\{\s*$/.exec(line);
-    if (opened) {
-      selector = opened[1];
+  const blocks = [];
+  let pending = '';
+  let quote = null;
+  let index = 0;
+
+  const close = () => {
+    // The property name is `--portolan-…`, which never contains a colon, so the first
+    // one separates it from the value however the value is quoted or wrapped.
+    const separator = pending.indexOf(':');
+    if (separator !== -1) {
+      const property = pending.slice(0, separator).trim();
+      if (property.startsWith('--')) {
+        // Prettier wraps long declarations, so the same value arrives on one line or on
+        // several depending only on its length. Collapsing runs of whitespace compares
+        // what the declaration says rather than how it was folded; anything the
+        // collapse hides is still caught by the line-by-line fallback below.
+        const value = pending
+          .slice(separator + 1)
+          .trim()
+          .replace(/\s+/gu, ' ');
+        found.push([`${property} under ${blocks.at(-1) ?? '(no selector)'}`, value]);
+      }
+    }
+    pending = '';
+  };
+
+  while (index < css.length) {
+    const character = css[index];
+    if (quote !== null) {
+      pending += character;
+      if (character === '\\') {
+        pending += css[index + 1] ?? '';
+        index += 2;
+        continue;
+      }
+      if (character === quote) quote = null;
+      index += 1;
       continue;
     }
-    const match = /^\s*(--[a-z0-9-]+):\s*([\s\S]*?);\s*$/.exec(line);
-    if (match) found.push([`${match[1]} under ${selector}`, match[2]]);
+    if (character === '"' || character === "'") {
+      quote = character;
+      pending += character;
+      index += 1;
+      continue;
+    }
+    if (character === '/' && css[index + 1] === '*') {
+      const end = css.indexOf('*/', index + 2);
+      index = end === -1 ? css.length : end + 2;
+      continue;
+    }
+    if (character === '{') {
+      blocks.push(pending.trim().replace(/\s+/gu, ' '));
+      pending = '';
+      index += 1;
+      continue;
+    }
+    if (character === '}') {
+      close();
+      blocks.pop();
+      pending = '';
+      index += 1;
+      continue;
+    }
+    if (character === ';') {
+      close();
+      index += 1;
+      continue;
+    }
+    pending += character;
+    index += 1;
   }
   return found;
 };
@@ -203,9 +334,32 @@ export const firstDifference = (committed, generated) => {
   return null;
 };
 
+/**
+ * `--check` or nothing. Anything else is refused rather than ignored: the two modes
+ * differ by whether a tracked file is overwritten, so `--chek` silently regenerating
+ * the very file it was asked to verify is the worst possible reading of a typo.
+ */
+export const parseArguments = (argv) => {
+  const unknown = argv.filter((argument) => argument !== '--check');
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown argument${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}. ` +
+        'Usage: node scripts/generate-tokens-css.mjs [--check]',
+    );
+  }
+  return { check: argv.includes('--check') };
+};
+
 const runGate = async () => {
+  let check;
+  try {
+    ({ check } = parseArguments(process.argv.slice(2)));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(2);
+  }
+
   const generated = await render();
-  const check = process.argv.includes('--check');
   const where = relative(root, CSS_PATH);
 
   if (!check) {
@@ -221,7 +375,11 @@ const runGate = async () => {
   let committed;
   try {
     committed = readFileSync(CSS_PATH, 'utf8');
-  } catch {
+  } catch (error) {
+    // Only a genuinely absent file is "missing". A permission error or a directory in
+    // its place is a broken checkout, and reporting it as a forgotten `tokens:css` run
+    // would send the reader to fix the wrong thing.
+    if (error.code !== 'ENOENT') throw error;
     console.error(`${where} is missing. Run \`npm run tokens:css\` and commit the result.`);
     process.exit(1);
   }

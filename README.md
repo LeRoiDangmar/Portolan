@@ -128,7 +128,13 @@ policy lands in the output, and `test/boundaries.test.ts` lints source through t
 
 AD-23: `DESIGN.md` stops being normative on values and becomes the documentation of
 intent. Every value the product looks like is authored in `packages/tokens/src/`, and a
-literal colour or a literal floor anywhere else in the code is a defect.
+literal colour or a literal floor in product code is a defect.
+
+The one exception is a test fixture. `test/contrast.test.ts` invents hexes and floors on
+purpose — a palette that meets every floor, one that misses one, one that trips an
+exemption — because a gate can only be shown to fail on a bad palette by handing it one.
+Fixtures are constructed inputs, never a second source of truth: they are built by
+overriding the real tokens, and none of them is read by anything the product renders.
 
 **Eleven namespaces, one file each**, so a reviewer can diff a namespace against
 `DESIGN.md`'s frontmatter without scrolling: `colour`, `stroke`, `opacity`, `elevation`,
@@ -149,12 +155,20 @@ the convention disappears. `packages/tokens/src/colour.test.ts` asserts the full
 71 pairs against an independently transcribed list of `DESIGN.md`'s names, so a dropped
 or invented token fails rather than passing quietly.
 
-**One named departure from `DESIGN.md`:** the twelve zone tints are
-`palette-cvd-analysis.md` §5's re-optimised register, not `DESIGN.md`'s shipped values.
-Those are the NFR-13 defect — light tints 1 and 3 simulate to a byte-identical `#E2E2EC`
-under deuteranopia. The replacement holds the same 1.13–1.19 iso-luminant band and the
-same C\* ≤ 12 register, so every edge floor survives; separation goes from 0.00 to 3.81
-in light and 1.30 to 3.38 in dark.
+**Three named departures from `DESIGN.md`**, each annotated in the file it lives in:
+
+1. **The twelve zone tints** come from `palette-cvd-analysis.md` §5's re-optimised
+   register, not from `DESIGN.md`'s shipped values. Those are the NFR-13 defect — light
+   tints 1 and 3 simulate to a byte-identical `#E2E2EC` under deuteranopia. The
+   replacement holds the same 1.13–1.19 iso-luminant band and the same C\* ≤ 12 register,
+   so every edge floor survives; separation goes from 0.00 to 3.81 in light and 1.30 to
+   3.38 in dark.
+2. **`shape.bubble.silhouette.seed`** is AD-5's identity key, not the Docker ID
+   `DESIGN.md` and FR-13 both name. AD-6 is the declared departure: a container ID makes
+   _the same shape across every survey_ false from the first redeployment onward.
+3. **`density.scale.affects`** drops `spacing.cell-clearance`. AD-8 overrode it because
+   density driving clearance makes the density control a fourth relayout action, against
+   FR-16.
 
 #### The CSS is generated, never hand-edited
 
@@ -166,6 +180,16 @@ npm run tokens:css -- --check   # fail if the committed CSS drifted from the sou
 All eleven namespaces flatten to `--portolan-*` custom properties. Dark sits at `:root`
 because dark is the default and the design target; light is a sibling block under
 `:root[data-palette='light']`, because light is first-class rather than derived.
+
+**The contract on that attribute.** The stylesheet reads it; nothing in `packages/tokens`
+writes it. `data-palette` goes on the document element, and its only meaningful value is
+`light`: absent, empty or anything else means dark, which is why the dark values sit at
+bare `:root` and the light block overrides them rather than the other way round. The
+chassis owns setting it, from the palette the user picks in the left menu — one predefined
+set at a time, never a single hue, because the ≥3:1 edge floor is a property of the set.
+`prefers-color-scheme` is deliberately not consulted: the palette is a stored preference
+(AD-20), and an OS setting silently overriding a chosen export palette would change what
+leaves in a screenshot.
 
 The output is tracked rather than built into `dist/`: `dist/` is gitignored, and a drift
 check over an untracked file checks nothing. The generator formats its output with the

@@ -136,7 +136,7 @@ describe('WCAG relative luminance and contrast', () => {
     ['survey stamp, dark', '#94A3AD', '#080B0E', 7.6],
     ['chart-legend index numeral, light', '#7B6228', '#E7ECEF', 4.9],
     ['tab labels, light', '#10171C', '#DDE4E8', 14.1],
-  ])('%s measures %s:1 as DESIGN.md prints it', (_row, foreground, background, printed) => {
+  ])('%s reproduces the ratio DESIGN.md prints', (_row, foreground, background, printed) => {
     // DESIGN.md quotes every ratio to one decimal, so half a last digit is the natural
     // tolerance. It is 0.06 rather than 0.05 for one row: *detail-panel keys* prints
     // 5.2 where the value is 5.149, which rounds to 5.1. A presentation rounding on a

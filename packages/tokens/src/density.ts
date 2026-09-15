@@ -11,6 +11,6 @@ export const density = {
     steps: '0.85 compact / 1.00 standard / 1.20 roomy',
     affects:
       'bubble radii, {spacing.gutter}, zone padding. NOT {spacing.cell-clearance}: DESIGN.md lets density drive clearance, and AD-8 overrode that because it makes the density control a fourth relayout action and contradicts FR-16. Clearance is reserved once at the roomiest step and no longer follows density.',
-    excludes: 'type sizes — those are {typography.scale}, a separate control',
+    excludes: 'type sizes — those are {type.scale}, a separate control',
   },
 } as const;

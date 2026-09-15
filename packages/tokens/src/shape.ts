@@ -67,7 +67,7 @@ export const shape = {
     partition:
       'a service belongs to one stack, so no two outlines ever share a member. Zones OVERLAP by construction; outlines only INTERSECT, and only where the layout has interleaved members.',
     label:
-      'set ON the stroke, upper-left, in {typography.stack-label} at {colors.ink-2} — one step quieter than the zone label in {colors.ink}',
+      'set ON the stroke, upper-left, in {type.stack-label} at {colour.ink-2} — one step quieter than the zone label in {colour.ink}',
     surfaces:
       'the overview only. Not drawn in the node view, for the same reason network zones are not: a stack spans machines, so its hull would cross every region.',
   },

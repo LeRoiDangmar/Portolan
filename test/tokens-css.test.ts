@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 // @ts-expect-error — a plain .mjs tooling script with no declarations.
 import * as generator from '../scripts/generate-tokens-css.mjs';
@@ -40,17 +40,87 @@ const runCheck = (): { status: number; output: string } => {
   }
 };
 
-/** Tamper with the committed CSS, run something, and put it back whatever happens. */
+/**
+ * Tamper with the committed CSS, run something, and put it back whatever happens.
+ *
+ * `CSS_PATH` is a TRACKED file, so a failure here must never leave it modified. The
+ * `finally` covers a thrown assertion; the `afterEach` below covers what `finally`
+ * cannot — an aborted run, a crashed worker, an interrupt between the two writes.
+ */
+const BACKUP_PATH = `${CSS_PATH}.backup`;
+
+const restoreCommittedCss = (): void => {
+  if (!existsSync(BACKUP_PATH)) return;
+  copyFileSync(BACKUP_PATH, CSS_PATH);
+  rmSync(BACKUP_PATH, { force: true });
+};
+
+afterEach(restoreCommittedCss);
+
 const withTamperedCss = <T>(edit: (css: string) => string, body: () => T): T => {
-  const backup = `${CSS_PATH}.backup`;
-  copyFileSync(CSS_PATH, backup);
+  copyFileSync(CSS_PATH, BACKUP_PATH);
   try {
     writeFileSync(CSS_PATH, edit(readFileSync(CSS_PATH, 'utf8')));
     return body();
   } finally {
-    copyFileSync(backup, CSS_PATH);
-    execFileSync('rm', ['-f', backup]);
+    restoreCommittedCss();
   }
+};
+
+/**
+ * Declarations to tamper with, taken from `declarations()` rather than written down.
+ * Hard-coding one ties the test to a value design may legitimately edit, and a `replace`
+ * that then silently matched nothing would fail with a confusing count rather than a
+ * reason.
+ *
+ * Two are needed, because Prettier wraps a long value across lines and the two shapes
+ * exercise different halves of the parser: a line-anchored reader sees the short one and
+ * is blind to the long one.
+ */
+const committedCss = (): string => readFileSync(CSS_PATH, 'utf8');
+
+/**
+ * Where a generated property actually sits in the committed file. The property list is
+ * `declarations()`; the text is the file's, because Prettier normalises quotes and folds
+ * long values, so the emitted string and the committed line are not the same characters.
+ * Values that themselves contain a `;` are skipped rather than mis-sliced.
+ */
+const locate = (property: string, value: string, css: string) => {
+  if (value.includes(';')) return null;
+  const start = css.indexOf(`\n  ${property}:`);
+  if (start === -1) return null;
+  const end = css.indexOf(';', start);
+  if (end === -1) return null;
+  const text = css.slice(start + 1, end + 2);
+  return { property, text, wrapped: text.trimEnd().includes('\n') };
+};
+
+const found = (wrapped: boolean) => {
+  const css = committedCss();
+  const { dark } = declarations() as { dark: [string, string][] };
+  for (const [property, value] of dark) {
+    const at = locate(property, value, css);
+    if (at !== null && at.wrapped === wrapped) return at;
+  }
+  throw new Error(`No ${wrapped ? 'wrapped' : 'single-line'} declaration in the committed CSS.`);
+};
+
+/** The first declaration Prettier left on one line, with the exact text it occupies. */
+const singleLineDeclaration = () => found(false);
+
+/**
+ * The first declaration Prettier wrapped across lines, with a word from it that occurs
+ * exactly once in the whole file — the only safe handle for editing a value whose text
+ * is broken up by line breaks and indentation.
+ */
+const wrappedDeclaration = (): { property: string; handle: string } => {
+  const css = committedCss();
+  const at = found(true);
+  const handle = at.text
+    .split(/\s+/u)
+    .find((word) => word.length >= 6 && !word.startsWith('--') && css.split(word).length === 2);
+  if (handle === undefined) throw new Error('No uniquely addressable word in a wrapped value.');
+  return { property: at.property, handle };
 };
 
 describe('the generated CSS carries every namespace across', () => {
@@ -71,9 +141,38 @@ describe('the generated CSS carries every namespace across', () => {
     expect(properties.filter((property) => !property?.startsWith('--portolan-'))).toEqual([]);
   });
 
+  it('names every namespace the token file exports, so none can go unemitted', () => {
+    // The generator iterates NAMESPACES and so does the case list below, which means a
+    // namespace missing from that constant would produce neither CSS nor a failing test.
+    // Comparing it against the surface itself is what closes the circle.
+    expect([...NAMESPACES].sort()).toEqual(Object.keys(tokens).sort());
+    expect(NAMESPACES).toHaveLength(11);
+  });
+
   it.each(NAMESPACES)('carries the %s namespace into the output', async (namespace: string) => {
     const css: string = await render();
     expect(css).toContain(`--portolan-${namespace}-`);
+  });
+
+  it('leaves no {namespace.…} cross-reference pointing at a namespace that does not exist', () => {
+    // DESIGN.md's prose refers to `{colors.…}` and `{typography.…}`; this package calls
+    // those `colour` and `type`. Left as written, the references ship into the generated
+    // CSS as permanently dead strings that no reader and no tool can follow.
+    const real = new Set<string>(NAMESPACES);
+    const dead: string[] = [];
+    const walk = (value: unknown, path: string): void => {
+      if (typeof value === 'string') {
+        for (const [, namespace] of value.matchAll(/\{([a-zA-Z]+)\./gu)) {
+          if (!real.has(namespace!)) dead.push(`${path} -> {${namespace}.…}`);
+        }
+        return;
+      }
+      if (value !== null && typeof value === 'object') {
+        for (const [key, child] of Object.entries(value)) walk(child, `${path}.${key}`);
+      }
+    };
+    for (const [namespace, value] of Object.entries(tokens)) walk(value, namespace);
+    expect(dead).toEqual([]);
   });
 
   it('declares every colour token in both palettes, and only colour in the light block', () => {
@@ -100,27 +199,38 @@ describe('the generated CSS carries every namespace across', () => {
 
 describe('the drift check catches a hand edit', () => {
   it('exits non-zero and names the first differing property', () => {
+    const { property, text } = singleLineDeclaration();
+    const committed = text.slice(text.indexOf(':') + 1, text.lastIndexOf(';')).trim();
     const result = withTamperedCss(
-      (css) =>
-        css.replace('--portolan-colour-ground: #06080a;', '--portolan-colour-ground: #FF0000;'),
+      (css) => css.replace(text, `  ${property}: TAMPERED;\n`),
       runCheck,
     );
     expect(result.status).toBe(1);
     expect(result.output).toContain('out of sync');
-    expect(result.output).toContain('--portolan-colour-ground');
+    expect(result.output).toContain(property);
     // The diff is the message: both values are printed, so the reader need not re-run
     // the generator to find out what changed.
-    expect(result.output).toContain('#FF0000');
-    expect(result.output).toContain('#06080a');
+    expect(result.output).toContain('TAMPERED');
+    expect(result.output).toContain(committed);
+  });
+
+  it('names the property when the edit is inside a declaration Prettier wrapped', () => {
+    // Seven of the 343 declarations are long enough for Prettier to fold across lines.
+    // A line-anchored parser never sees them, so an edit inside one would fall through
+    // to the line-number fallback — a report naming `line 134` rather than the token.
+    const { property, handle } = wrappedDeclaration();
+    const result = withTamperedCss((css) => css.replace(handle, 'TAMPERED'), runCheck);
+    expect(result.status).toBe(1);
+    expect(result.output).toContain(property);
+    expect(result.output).toContain('changed');
+    expect(result.output).not.toContain('differs outside any declaration');
   });
 
   it('catches a deleted declaration as well as a changed one', () => {
-    const result = withTamperedCss(
-      (css) => css.replace(/^\s*--portolan-colour-ground: #06080a;\n/m, ''),
-      runCheck,
-    );
+    const { property, text } = singleLineDeclaration();
+    const result = withTamperedCss((css) => css.replace(text, ''), runCheck);
     expect(result.status).toBe(1);
-    expect(result.output).toContain('--portolan-colour-ground');
+    expect(result.output).toContain(property);
     expect(result.output).toContain('missing from the committed CSS');
   });
 

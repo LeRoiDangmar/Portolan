@@ -5,7 +5,13 @@ import { audit, failures, format } from '../scripts/check-contrast.mjs';
 // @ts-expect-error — plain .mjs tooling scripts with no declarations.
 import { contrastRatio } from '../scripts/colour.mjs';
 
-import { colour, gatedFloors, exemptions, separation } from '../packages/tokens/src/index.ts';
+import {
+  colour,
+  gatedFloors,
+  exemptions,
+  opacity,
+  separation,
+} from '../packages/tokens/src/index.ts';
 
 /**
  * The AD-28 gate, driven over fixture palettes through the real `audit` — the same
@@ -87,6 +93,31 @@ describe('a palette that meets every floor', () => {
     expect(floors.get('health')).toBe(4);
     expect(floors.get('edge-over-zone-field')).toBe(3);
     expect(floors.get('focus-ring')).toBe(3);
+  });
+
+  it('measures each edge over a single tint only because the luminance clamp says it may', () => {
+    // AD-28 asks for 3:1 over the worst COMPOSITED zone field. The whole method — a loop
+    // over six tints, with no `packages/scene` — rests on `opacity.zone-field-cap`
+    // clamping that composite to one tint. No code reads that token, so if design
+    // withdrew the clamp the gate would go on measuring one layer while reporting the
+    // worst composite. Pinning it here makes the withdrawal turn this test red instead.
+    expect(opacity['zone-field-cap']).toContain('LUMINANCE-CLAMPED to a single tint');
+    const edges = gatedFloors.find((rule) => rule.id === 'edge-over-zone-field');
+    expect(edges!.channel).toContain('worst composited zone field');
+    expect(edges!.pairs.map((pair) => pair.background)).toEqual([
+      'zone-tint-1',
+      'zone-tint-2',
+      'zone-tint-3',
+      'zone-tint-4',
+      'zone-tint-5',
+      'zone-tint-6',
+      'zone-tint-1',
+      'zone-tint-2',
+      'zone-tint-3',
+      'zone-tint-4',
+      'zone-tint-5',
+      'zone-tint-6',
+    ]);
   });
 });
 
@@ -234,6 +265,63 @@ describe('NFR-13 separation', () => {
     // Mutation guard: the threshold is data, so raising it must turn the gate red.
     const strict = audit({ colours: clean, nfr13: { ...separation, threshold: 99 } });
     expect(failures(strict).length).toBe(4);
+  });
+});
+
+describe('the two luminance coefficient rows', () => {
+  /**
+   * The gate computes every pair a second time with the full-precision sRGB luminance
+   * row and reports any pair where the two forms fall on opposite sides of a floor.
+   * On the shipped palette that list is empty — which an entirely dead mechanism would
+   * also produce, so asserting emptiness alone proves nothing. This drives it with a
+   * one-rule fixture whose floor sits BETWEEN the two computed ratios.
+   *
+   * `ink` on `panel` measures 15.374519:1 under WCAG's rounded coefficients and
+   * 15.374425:1 under the full-precision row. A floor at 15.3745 passes one and fails
+   * the other, which is exactly the case the gate must not resolve quietly.
+   */
+  const STRADDLING_FLOOR = {
+    id: 'straddle-fixture',
+    channel: 'a floor between the two luminance rows',
+    floor: 15.3745,
+    why: 'a fixture, not a real floor.',
+    pairs: [{ foreground: 'ink', background: 'panel' }],
+  };
+
+  // Dark only: the fixture floor is a dark-palette measurement, and `ink` on `panel`
+  // measures 14.63:1 in light, which would fail it for an unrelated reason.
+  const report = audit({
+    colours: clean,
+    floors: [STRADDLING_FLOOR],
+    exempt: [],
+    palettes: ['dark'],
+  });
+
+  it('names the pair in straddles rather than resolving it silently', () => {
+    expect(report.straddles).toHaveLength(1);
+    const straddle = report.straddles[0] as {
+      rule: string;
+      palette: string;
+      foreground: string;
+      background: string;
+      wcag: number;
+      fullPrecision: number;
+    };
+    expect(straddle.rule).toBe('straddle-fixture');
+    expect(straddle.palette).toBe('dark');
+    expect(straddle.foreground).toBe('ink');
+    expect(straddle.background).toBe('panel');
+    expect(straddle.wcag).toBeGreaterThanOrEqual(STRADDLING_FLOOR.floor);
+    expect(straddle.fullPrecision).toBeLessThan(STRADDLING_FLOOR.floor);
+  });
+
+  it('prints the straddle in the report, so it reaches a reader and not only a caller', () => {
+    const text = messages(report);
+    expect(text).toContain('full precision');
+    expect(text).toContain('ink on panel');
+    // Reported, not resolved: the pair clears its floor under WCAG, which is the form
+    // NFR-11 cites, so the gate stays green on it.
+    expect(failures(report)).toEqual([]);
   });
 });
 

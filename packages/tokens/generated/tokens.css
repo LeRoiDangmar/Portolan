@@ -9,8 +9,10 @@
  * palette is a sibling block under :root[data-palette='light'], because light is
  * first-class rather than derived.
  *
- * The values are DESIGN.md's, with one named exception: the twelve zone tints are
- * palette-cvd-analysis.md §5's re-optimised register, which is what clears NFR-13.
+ * The values are DESIGN.md's, with three named departures, each annotated in the token
+ * file it lives in: the twelve zone tints follow palette-cvd-analysis.md §5, which is
+ * what clears NFR-13; shape.bubble.silhouette.seed follows AD-6's identity key rather
+ * than the Docker ID; density.scale.affects drops cell-clearance per AD-8.
  */
 
 :root {
@@ -87,29 +89,29 @@
   --portolan-colour-state-stale: #0a0e12;
   --portolan-stroke-edge-width: 1.6px;
   --portolan-stroke-edge-graduation: '4px dasharray 0.6 7 @ 0.55, overlaid on the solid stroke';
-  --portolan-stroke-edge-attach: '0.9px dasharray 2 4, {colors.edge-attach}';
+  --portolan-stroke-edge-attach: '0.9px dasharray 2 4, {colour.edge-attach}';
   --portolan-stroke-edge-attach-min-length: '6px on screen — the attachment stub never shrinks below one and a half periods of its own 2 4 dasharray, so it stays a visible mark at rung 0';
-  --portolan-stroke-edge-mount: '1.6px solid, {colors.edge-mount}';
+  --portolan-stroke-edge-mount: '1.6px solid, {colour.edge-mount}';
   --portolan-stroke-edge-floor: 'never below 3:1 against the worst composited zone field, in either mode. The clamp in {opacity.zone-field-cap} is what makes the worst composite equal to a single tint, and therefore what makes this floor checkable rather than true-of-one-layer.';
   --portolan-stroke-zone-isoline-width: 3.5px;
   --portolan-stroke-zone-isoline-dasharray: 0.8 9;
   --portolan-stroke-zone-isoline-opacity: '{opacity.zone-isoline}';
   --portolan-stroke-zone-isoline-style: 'open contour — never closed, never a filled outline';
-  --portolan-stroke-zone-isoline-color: '{colors.zone-isoline-1}…{colors.zone-isoline-6}';
+  --portolan-stroke-zone-isoline-color: '{colour.zone-isoline-1}…{colour.zone-isoline-6}';
   --portolan-stroke-zone-blob-width: 1px;
   --portolan-stroke-zone-blob-style: solid, closed;
-  --portolan-stroke-zone-blob-color: '{colors.pastille-network-1}…{colors.pastille-network-6}';
+  --portolan-stroke-zone-blob-color: '{colour.pastille-network-1}…{colour.pastille-network-6}';
   --portolan-stroke-stack-outline-width: 1.25px;
   --portolan-stroke-stack-outline-style: 'solid, closed, continuous — no dasharray, no graduation, no fill of any kind';
-  --portolan-stroke-stack-outline-color: '{colors.stack-outline}';
+  --portolan-stroke-stack-outline-color: '{colour.stack-outline}';
   --portolan-stroke-stack-outline-break: the stroke opens once, for its own label, and nowhere else;
   --portolan-stroke-stack-outline-floor: '≥3:1 over the clamped zone field in both modes, and deliberately BELOW both edge kinds. An edge runs between two bodies and terminates on them; this closes on itself and terminates on nothing. Nothing may counterfeit an edge — including a grouping mark.';
   --portolan-stroke-hairline: 0.75px;
   --portolan-stroke-rule: 1px;
   --portolan-stroke-contour: 1px;
   --portolan-stroke-contour-inner: 0.7px at 0.87r;
-  --portolan-stroke-band-divider: '0.8px, {colors.band-divider}';
-  --portolan-stroke-focus: '2px {colors.focus}, 2px offset, square corners, no radius';
+  --portolan-stroke-band-divider: '0.8px, {colour.band-divider}';
+  --portolan-stroke-focus: '2px {colour.focus}, 2px offset, square corners, no radius';
   --portolan-opacity-dim-unreachable: 0.18;
   --portolan-opacity-dim-filter-context: 0.1;
   --portolan-opacity-echo: 0.55;
@@ -121,12 +123,12 @@
   --portolan-elevation-bubble-dark-small: 'feDropShadow dy 0.07r · stdDeviation 0.09r · #000 @ 0.85, capped at dy 3 / stdDeviation 4 — volumes and echoes';
   --portolan-elevation-bubble-floor: 'no shadow at all below a rendered body diameter of 30px. At LOD rung 0 on any cluster past ~150 objects the bodies are 14–28px across, so rung 0 carries no shadow: the contour does the lifting, exactly as it already does in light mode.';
   --portolan-elevation-bubble-rationale: 'the fixed dy 5 / σ 7 drop extends ~21px past the silhouette — 1.5× the whole body at map scale, against 8px of cell clearance — and 325 unaccelerated SVG filter regions re-rasterise on every breath. Proportional-plus-floor fixes both the fog and the frame rate.';
-  --portolan-elevation-bubble-light: 'none — the light body is {colors.body-mid-light} against a tinted ground, lifted by its 1px {colors.contour-light} hairline. Light mode is therefore the palette that survives the dense frame intact, and it is already the screenshot palette.';
+  --portolan-elevation-bubble-light: 'none — the light body is {colour.body-mid.light} against a tinted ground, lifted by its 1px {colour.contour.light} hairline. Light mode is therefore the palette that survives the dense frame intact, and it is already the screenshot palette.';
   --portolan-elevation-bubble-note: Stylised depth only. No perspective, no isometric, no z-axis.;
   --portolan-elevation-panel-dark: inset 1px hairline, no shadow;
   --portolan-elevation-panel-light: inset 1px hairline, no shadow;
-  --portolan-elevation-halo-dark: 'radialGradient, {colors.glass} 0 → 0.13 between 60% and 100% of 1.13r';
-  --portolan-elevation-halo-light: 'ring, 0.6px {colors.glass-light} @ 0.35 at 1.13r';
+  --portolan-elevation-halo-dark: 'radialGradient, {colour.glass} 0 → 0.13 between 60% and 100% of 1.13r';
+  --portolan-elevation-halo-light: 'ring, 0.6px {colour.glass.light} @ 0.35 at 1.13r';
   --portolan-shape-bubble-silhouette-geometry: 'closed cubic Bézier, 28 control points';
   --portolan-shape-bubble-silhouette-amplitude: '±11% of base radius';
   --portolan-shape-bubble-silhouette-seed: "the object's AD-5 IDENTITY KEY — `stack/service/slot` for a replicated task, `stack/service/node` for a global one, the name for a volume or network. SUPERSEDES DESIGN.md, which says the Docker ID, and FR-13, which says the same: AD-6 is a declared departure raised upstream, because a container ID makes *the same shape across every survey* false from the first redeployment onward. Accepted cost, named there: two genuinely different containers render as one body, and the container ID stays visible in the detail panel where it misleads nobody.";
@@ -170,7 +172,7 @@
     and it does not arrive a second time here.;
   --portolan-shape-stack-outline-routing: 'it threads around intervening non-members where the layout leaves room; where it cannot, it encloses them — and the diamond pastille is the exact answer, which is the case the ruling names';
   --portolan-shape-stack-outline-partition: 'a service belongs to one stack, so no two outlines ever share a member. Zones OVERLAP by construction; outlines only INTERSECT, and only where the layout has interleaved members.';
-  --portolan-shape-stack-outline-label: 'set ON the stroke, upper-left, in {typography.stack-label} at {colors.ink-2} — one step quieter than the zone label in {colors.ink}';
+  --portolan-shape-stack-outline-label: 'set ON the stroke, upper-left, in {type.stack-label} at {colour.ink-2} — one step quieter than the zone label in {colour.ink}';
   --portolan-shape-stack-outline-surfaces: 'the overview only. Not drawn in the node view, for the same reason network zones are not: a stack spans machines, so its hull would cross every region.';
   --portolan-shape-network-octave-rule: "HUE = the network's index in the six-step rotation. PATTERN = the octave, i.e. which turn of the rotation it is on. Network 7 is hue 1 with the second pattern; network 13 is hue 1 with the third.";
   --portolan-shape-network-octave-patterns: 'solid / half (diagonal split) / ring (concentric) / dotted — extensible; four patterns carry 24 networks';
@@ -182,7 +184,7 @@
   --portolan-shape-network-octave-cost: 'a pattern inside an 8px badge is a ~6px interior. Unproven at that size — see Open Questions.';
   --portolan-density-scale-steps: '0.85 compact / 1.00 standard / 1.20 roomy';
   --portolan-density-scale-affects: 'bubble radii, {spacing.gutter}, zone padding. NOT {spacing.cell-clearance}: DESIGN.md lets density drive clearance, and AD-8 overrode that because it makes the density control a fourth relayout action and contradicts FR-16. Clearance is reserved once at the roomiest step and no longer follows density.';
-  --portolan-density-scale-excludes: 'type sizes — those are {typography.scale}, a separate control';
+  --portolan-density-scale-excludes: 'type sizes — those are {type.scale}, a separate control';
   --portolan-spacing-1: 2px;
   --portolan-spacing-2: 4px;
   --portolan-spacing-3: 8px;

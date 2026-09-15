@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { colour } from './colour.ts';
@@ -137,6 +140,62 @@ describe('the colour namespace against DESIGN.md', () => {
     expect(missingLight).toEqual([]);
     expect(missingDark).toEqual([]);
   });
+
+  /**
+   * DESIGN.md's `colors:` frontmatter, read from the file itself. The name list above
+   * catches a dropped or invented token; only this catches a mistyped digit inside a
+   * value that is otherwise plausible — which is the failure mode AD-23 exists to
+   * prevent, since after AD-23 nothing downstream can tell a faithful copy from a
+   * plausible one.
+   */
+  const designMd = (): Map<string, string> => {
+    const path = fileURLToPath(
+      new URL(
+        '../../../_bmad-output/planning-artifacts/ux-designs/ux-Portolan-2026-09-10/DESIGN.md',
+        import.meta.url,
+      ),
+    );
+    const lines = readFileSync(path, 'utf8').split('\n');
+    const start = lines.findIndex((line) => line === 'colors:');
+    const values = new Map<string, string>();
+    for (const line of lines.slice(start + 1)) {
+      // The block ends at the next top-level key; comments and blank lines are skipped.
+      if (/^[a-z]/.test(line)) break;
+      const match = /^ {2}([a-z0-9-]+):\s*'(#[0-9A-Fa-f]{6})'/.exec(line);
+      if (match) values.set(match[1]!, match[2]!);
+    }
+    return values;
+  };
+
+  /**
+   * The twelve values this file deliberately does NOT take from DESIGN.md. They are the
+   * NFR-13 defect — light tints 1 and 3 simulate to a byte-identical `#E2E2EC` under
+   * deuteranopia — and are replaced by design's own re-optimised register from
+   * `palette-cvd-analysis.md` §5. Listed explicitly so the exception cannot widen
+   * silently to cover a transcription slip in some other token.
+   */
+  const ADOPTED_FROM_ANALYSIS = new Set([
+    'zone-tint-1',
+    'zone-tint-2',
+    'zone-tint-3',
+    'zone-tint-4',
+    'zone-tint-5',
+    'zone-tint-6',
+  ]);
+
+  it('reads 142 values out of DESIGN.md, so the comparison below is over the whole block', () => {
+    expect(designMd().size).toBe(142);
+  });
+
+  it.each(names.filter((name) => !ADOPTED_FROM_ANALYSIS.has(name)))(
+    '%s matches DESIGN.md in both palettes, digit for digit',
+    (name) => {
+      const design = designMd();
+      const pair = colour[name as keyof typeof colour];
+      expect(pair.dark).toBe(design.get(name));
+      expect(pair.light).toBe(design.get(`${name}-light`));
+    },
+  );
 
   it('adopts palette-cvd-analysis.md §5 for the zone tints, not DESIGN.md shipped values', () => {
     // The one named departure from DESIGN.md. Light tints 1 and 3 as shipped simulate

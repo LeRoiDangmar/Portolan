@@ -284,6 +284,40 @@ here rather than carry. They are in place; the ratchet that consumes them is not
 
 ## Review Triage Log
 
+Three layers ran on the full diff: blind hunter (13 findings), edge-case hunter (15), verification
+gap (3 gap findings + 4 others). Every finding gets a row.
+
+| Finding | Verdict | Evidence |
+| --- | --- | --- |
+| `parseDeclarations` is line-anchored, so Prettier-wrapped declarations escape the property-level drift report | **patch** | Confirmed by counting: 343 declaration starts in the generated CSS, 336 of them single-line — 7 invisible. Drift in them falls to the line fallback, contradicting the I/O matrix's "names the first differing property". |
+| No tamper test covers a multi-line declaration | **patch** | Confirmed: all three drift cases edit `--portolan-colour-ground` or the header, which is why the parser hole survived. |
+| Unknown argv falls through to the write branch | **patch** | Real: `--chek` overwrites the committed CSS instead of checking it. |
+| `flatten` has no branch for array/null/undefined, and two keys can kebab to one property | **patch** | Real. A collision last-writes-wins in the cascade and `firstDifference`'s `Map` hides it, so the drift check cannot see its own blind spot. |
+| `cssValue` escapes only `\` and `"` | **patch** | Real: a prose value with a newline emits an unterminated CSS string. The function's whole job is making hand-transcribed prose safe. |
+| `readFileSync` catch reports EACCES/EISDIR as "missing" | **patch** | Real, and cheap: re-throw anything but ENOENT. |
+| Gate never validates `entry.from`, `measure.kind` or `measure.alpha` | **patch** | Real, and it matters more than usual: AD-28 makes the exemption set data *design edits by hand*, so a typo must fail loudly rather than print a live-looking exemption that checks nothing. |
+| 17 prose cross-references name namespaces that do not exist | **patch** | Confirmed by count: 15 `{colors.` and 2 `{typography.` against actual namespaces `colour` and `type`. They ship into the CSS as dead strings, in a file AD-23 makes normative. |
+| The generated CSS is unreachable through the package boundary | **patch** | Confirmed: `exports` carries only `.` and `./package.json`, `files` is `["dist"]`. Nothing can import the artefact the pipeline exists to produce. |
+| Tamper tests mutate the tracked CSS and shell out to `rm` | **patch** | Real. An interrupted run leaves a corrupted tracked file and a stray `.backup`; `rm` is not portable. |
+| Tamper tests hard-code `--portolan-colour-ground: #06080a` | **patch** | Real: a legitimate design edit of that token turns `replace` into a no-op and fails the tests with "expected 0 to be 1" — on a file whose entire purpose is that design edits token values. |
+| The straddle mechanism is asserted only by its own silence | **patch** | Pre-verified by the verification-gap layer and independently plausible: `expect(straddles).toEqual([])` is equally satisfied by a dead mechanism. |
+| `NAMESPACES` coverage is never asserted against `Object.keys(tokens)` | **patch** | Pre-verified. The `it.each` draws its cases from the same constant the generator iterates, so a missing namespace produces neither CSS nor a test case. |
+| `opacity.zone-field-cap` is read by no code and pinned by no test | **patch** | Pre-verified. The single-tint edge measurement rests entirely on that clamp; if design withdraws it the gate keeps reporting "over the worst composited zone field" while measuring one layer. |
+| Colour VALUES are never mechanically compared against `DESIGN.md` | **patch** | Real: `colour.test.ts` transcribes NAMES independently and asserts only that both palettes are six-digit hex. A mistyped light value passes every gate — which is precisely the transcription error AD-23 exists to prevent. |
+| `it.each` template prints the foreground hex where the ratio belongs | **patch** | Confirmed at `test/colour.test.ts:139`: `'%s measures %s:1'` consumes `_row` then `foreground`, so names read "measures #A0AEB8:1". |
+| README and `colour.ts` both claim "one named departure" from `DESIGN.md` | **patch** | Real, and caused by this review: the AD-6 seed and AD-8 clearance corrections make three. |
+| Gate header claims the exemption set was complete and ratified before enabling | **patch** | Real: the gate's own red contradicts it. The analysis did not sweep the network pastille family, so whether that red wants a value change or an unnamed exemption is still open. |
+| README forbids literal colours and floors that its own new fixtures ship | **patch** | Real: `test/contrast.test.ts` carries invented hexes and literal floors. The rule needs a fixture carve-out or the documentation forbids the diff. |
+| Nothing documents who sets `data-palette='light'` | **patch** | Real: the whole light block hangs on an attribute with no stated contract. |
+| `type.ts` uses camelCase keys without the note `rounded.ts` gives its own lowering | **patch** | Real, and it weakens the "diff a namespace against DESIGN.md line for line" claim the file is organised around. |
+| The gate measures marks only against `body-mid`, the middle stop of a three-stop gradient | **defer** | Real and verified: on `body-top` the health mark reads 3.83:1 against its 4:1 floor and `pastille-network-1` 4.04:1 against 4.5:1; on `body-sel-top` `bubble-id` reads 6.64:1 against the 7:1 identifier floor. But `DESIGN.md`'s own contrast rows are measured against `body-mid` (its printed "4.4 – 5.2" reproduces exactly), so gating more stops would widen a blocking gate past both AD-28's contract and the document's own measurements. Design's to rule. |
+| The adopted tints pushed the mode-B zone blob below its 4:1 floor | **defer** | Verified: `pastille-network-1` over `zone-tint-1` dark reads 3.97:1, was 4.00:1. Not among AD-28's five, so CI cannot see it. Already recorded; the finding's real point — that README and the notes under-communicate it — is answered by the notes above. |
+| The new blocking job is red from its first run, so the check carries no incremental signal | **defer** | Verified: `npm run contrast` exits 1 today. Not caused by this change — the pastille values predate it and `DESIGN.md` itself prints a low end below the floor it declares. AD-28 makes the ruling design's, and a permanently-red required check is exactly the pressure that gets gates bypassed, so it is surfaced to the human rather than buried. |
+| Entrypoint check compares `process.argv[1]` without `realpathSync`, so a symlinked invocation skips the gate | **defer** | Real but unreachable today: nothing in the repo or CI invokes either script through a symlink. The pattern is story 1's convention, copied deliberately — `scripts/check-licences.mjs` has it too — so the fix belongs to all three scripts at once, not to this story alone. |
+| Isolines were derived against the superseded tints | **defer** | Already recorded before review. Verified they still clear their 3:1 floor on the adopted tints (3.20–3.68 dark), so the deferral is precautionary rather than a live miss. |
+| Story `## Verification` under-counts the suite (233 tests / 6 files against the actual 254 / 7) | **rejected** | True, but its fix is an edit to this build's spec, which triage rejects by rule. The correct figures are recorded in the Implementation Notes above instead. |
+
+
 ## Design Notes
 
 **Why the gate does not need `packages/scene`.** AD-28 asks for 3:1 over the *worst composited zone
@@ -305,9 +339,10 @@ get disabled.
   token file compiles under `strict` with `erasableSyntaxOnly`: `as const` objects and `type` only.
 - `npm run lint` -- **passes**, `eslint .` and `prettier --check .` both clean, the generated CSS
   included.
-- `npm test` -- **233 tests across 6 files, all passing**. Story 1's three suites (81 tests) are
-  unchanged; the new ones are `packages/tokens/src/colour.test.ts` (77), `test/colour.test.ts` (58)
-  and `test/contrast.test.ts` (17).
+- `npm test` -- **326 tests across 7 files, all passing**, after the review round. Story 1's three
+  suites (81 tests) are unchanged; the new ones are `packages/tokens/src/colour.test.ts` (143, most
+  of them the per-token comparison against `DESIGN.md`'s own frontmatter),
+  `test/colour.test.ts` (58), `test/contrast.test.ts` (20) and `test/tokens-css.test.ts` (24).
 - `npm run build` -- **passes**; `tsc --build` emits all twelve workspaces and Vite emits
   `dist/browser`. No test file reaches `packages/tokens/dist`.
 - `npm run licences` -- 136 installed packages, all compatible. **No dependency was added**: the
