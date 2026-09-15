@@ -2,7 +2,7 @@
 title: 'Design tokens as the single source of truth'
 type: 'feature'
 created: '2026-09-15'
-status: 'review'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '52ee115b619a485c6c5959a4216ac4519a37534c'
