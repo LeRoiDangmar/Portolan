@@ -11,7 +11,7 @@ import {
   volumeKey,
 } from './identity.ts';
 import type { Survey } from './survey.ts';
-import { WIRE_ERROR_PREFIX, fromWire, toWire } from './wire.ts';
+import { WIRE_ERROR_PREFIX, WIRE_VERSION, fromWire, toWire } from './wire.ts';
 
 /**
  * AD-42 asks for the model → wire → model round trip by name, and for a `fromWire` that
@@ -370,6 +370,18 @@ const rows: readonly [string, (body: Record<string, unknown>) => void, RegExp][]
     },
     /^wire: edges\[0\]\.from: no object in this survey has key "node:n7"$/,
   ],
+  [
+    'a missing schema version',
+    (body) => delete body['version'],
+    /^wire: survey\.version: missing$/,
+  ],
+  [
+    'a schema version this build does not know',
+    (body) => {
+      body['version'] = WIRE_VERSION + 1;
+    },
+    /^wire: survey\.version: expected 1, received 2$/,
+  ],
 ];
 
 describe('fromWire rejects an untrusted payload, naming the path', () => {
@@ -414,6 +426,30 @@ describe('fromWire rejects an untrusted payload, naming the path', () => {
 
   it('accepts the fixture it was given, so the rows above fail for their own reason', () => {
     expect(() => fromWire(payload())).not.toThrow();
+  });
+});
+
+describe('the payload declares its schema version', () => {
+  it('stamps every payload `toWire` produces', () => {
+    expect(toWire(SURVEY).version).toBe(WIRE_VERSION);
+    expect(payload()['version']).toBe(WIRE_VERSION);
+  });
+
+  it('keeps the version off the model, which knows nothing of the protocol', () => {
+    // The round trip above already proves `fromWire` returns a `Survey` equal to the
+    // original; this is the other half — the field never arrives on one.
+    expect('version' in fromWire(payload())).toBe(false);
+    expect('version' in SURVEY).toBe(false);
+  });
+
+  it('checks the version before anything else, so an old payload fails on that alone', () => {
+    // A payload from another schema is rejected WHOLE. If the version were read late, a
+    // stale tab would be told its `volumes` collection is malformed — true, but the wrong
+    // diagnosis, and it points the reader at the cluster instead of at the upgrade.
+    const body = payload();
+    body['version'] = WIRE_VERSION + 1;
+    delete body['volumes'];
+    expect(() => fromWire(body)).toThrow(/^wire: survey\.version: /);
   });
 });
 

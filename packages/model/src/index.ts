@@ -138,8 +138,9 @@ export type {
   WireNode,
   WireRunsEdge,
   WireService,
+  WireSnapshot,
   WireStack,
   WireSurvey,
   WireVolume,
 } from './wire.ts';
-export { WIRE_ERROR_PREFIX, fromWire, toWire } from './wire.ts';
+export { WIRE_ERROR_PREFIX, WIRE_VERSION, fromWire, toWire } from './wire.ts';

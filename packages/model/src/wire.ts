@@ -165,8 +165,15 @@ export interface WireMountEdge {
 export type WireEdge =
   WireHostsEdge | WireGroupsEdge | WireRunsEdge | WireAttachmentEdge | WireMountEdge;
 
-/** The wire unit: one complete snapshot, exactly as the SSE payload carries it (AD-11). */
-export interface WireSurvey {
+/**
+ * The snapshot half of the wire form — the cluster, and nothing about the protocol.
+ *
+ * Structurally identical to {@link Survey}, and {@link WireFormMatchesModel} is what keeps
+ * it so. The version below is deliberately NOT a member: it describes the payload, not the
+ * cluster, and a model that carried a protocol version would be the first docker-ism-shaped
+ * leak in the other direction.
+ */
+export interface WireSnapshot {
   readonly takenAt: string;
   readonly nodes: readonly WireNode[];
   readonly networks: readonly WireNetwork[];
@@ -175,6 +182,26 @@ export interface WireSurvey {
   readonly services: readonly WireService[];
   readonly containers: readonly WireContainer[];
   readonly edges: readonly WireEdge[];
+}
+
+/**
+ * The schema version every payload carries.
+ *
+ * Nothing upstream asks for it. Server and browser ship in ONE image (AD-19), so they agree
+ * by construction — except across an upgrade, where a tab left open reconnects its SSE
+ * stream to a server built from different sources. Without this field that tab misparses in
+ * silence, on a product whose central promise is that the map never lies about the cluster.
+ * It has no consumer until the server story reads it and reloads the tab, and that is
+ * accepted: the alternative is amending a frozen wire contract later.
+ *
+ * Bump it when a change to {@link WireSnapshot} would make an older reader wrong — never for
+ * an addition an older reader can ignore.
+ */
+export const WIRE_VERSION = 1;
+
+/** The wire unit: one complete snapshot, exactly as the SSE payload carries it (AD-11). */
+export interface WireSurvey extends WireSnapshot {
+  readonly version: typeof WIRE_VERSION;
 }
 
 type Assert<T extends true> = T;
@@ -200,7 +227,7 @@ type Exact<A, B> =
  * the build that introduced it. A round-trip test cannot catch that: it only ever sees the
  * fields the fixture was written with.
  */
-export type WireFormMatchesModel = Assert<Exact<WireSurvey, Survey>>;
+export type WireFormMatchesModel = Assert<Exact<WireSnapshot, Survey>>;
 
 // --- model → wire -----------------------------------------------------------
 
@@ -235,6 +262,7 @@ const wireEdge = (edge: Edge): WireEdge => {
  * from its declared fields, so the value that leaves is JSON and demonstrably nothing else.
  */
 export const toWire = (survey: Survey): WireSurvey => ({
+  version: WIRE_VERSION,
   takenAt: survey.takenAt,
   nodes: survey.nodes.map((node) => ({
     kind: 'node',
@@ -626,8 +654,24 @@ const readEdges = (value: unknown, known: ReadonlySet<string>): readonly Edge[] 
   });
 };
 
+/**
+ * The version gate, and it runs before anything else is read.
+ *
+ * A payload from a version this build does not know is REJECTED WHOLE. Reading the fields
+ * it happens to share would hand the caller a survey assembled from a schema nobody
+ * checked — the partial graph the rest of this file exists to make impossible.
+ */
+const readVersion = (record: Record<string, unknown>): void => {
+  const value = record['version'];
+  if (value === undefined) fail('survey.version', 'missing');
+  if (value !== WIRE_VERSION) {
+    fail('survey.version', `expected ${WIRE_VERSION}, received ${JSON.stringify(value)}`);
+  }
+};
+
 export const fromWire = (payload: unknown): Survey => {
   const record = readRecord(payload, 'survey');
+  readVersion(record);
   if (record['edges'] === undefined) fail('edges', 'missing');
   const takenAt = readTimestamp(record, 'takenAt', 'survey');
   const nodes = readCollection(record, 'nodes', readNode);
