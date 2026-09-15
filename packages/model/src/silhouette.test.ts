@@ -78,6 +78,38 @@ describe('the silhouette is a pure function of the identity key (AD-6)', () => {
     }
   });
 
+  /**
+   * The matrix asks for byte-identity ACROSS PROCESSES, and neither test above reaches
+   * that far: both re-derive their expectation inside the run they are checking. These
+   * digests were computed once, on 2026-09-15, and committed — so the assertion is made by
+   * a process that has already exited, which is the only form the claim can take. They
+   * cover every number in the contour at once: the 28 transcribed bearings, the seeded
+   * amplitudes, the Catmull–Rom control points and the core rectangle, each rendered by
+   * `JSON.stringify`, whose output for a double ECMAScript specifies exactly.
+   *
+   * A failure here is never a number to update. It means the contour moved, and with it
+   * every silhouette a user has learned to recognise (AD-6) — so the change that moved it
+   * is what needs justifying, not this table.
+   */
+  const GOLDEN_CONTOURS: readonly (readonly [IdentityKey, number])[] = [
+    ['container:blog/web/3', 1570342678],
+    ['container:blog/web/4', 2930378855],
+    ['container:/adhoc/1', 2631683718],
+    ['volume:web', 4205733418],
+    ['network:web', 669698794],
+    ['volume:pgdata', 2730006845],
+    ['volume:pg-data', 3253743713],
+  ];
+
+  it.each(GOLDEN_CONTOURS)('reproduces the committed contour for %s', (key, digest) => {
+    expect(fnv1a(JSON.stringify(silhouette(key, BASE_RADIUS.container)))).toBe(digest);
+  });
+
+  it('would report a drift, so the digests above are evidence and not decoration', () => {
+    const moved = silhouette('volume:web', BASE_RADIUS.container + 1);
+    expect(fnv1a(JSON.stringify(moved))).not.toBe(4205733418);
+  });
+
   it('gives a volume and a network of the same name two different contours', () => {
     const volume = silhouette(volumeKey('web'), BASE_RADIUS.volume);
     const network = silhouette(networkKey('web'), BASE_RADIUS.volume);

@@ -210,7 +210,21 @@ test, in one package that imports nothing and holds nothing across calls.
   sending it would be sending a value the receiver can recompute exactly — a second copy of
   a derived value, which AD-38 calls a defect however small the duplicate looks.
 
-**Verification run:** `npm run typecheck`, `npm run lint`, `npm test` (452 tests, 10 files,
+**Added at the matrix audit — golden contour digests.** The matrix's silhouette row asks for
+byte-identity *in two processes*, and neither determinism test reached that far: both re-derive
+their expectation inside the run they are checking, so both would agree with a contour that had
+moved. Seven digests — FNV-1a over `JSON.stringify(silhouette(key, r))`, computed once on
+2026-09-15 and committed — are the only form the claim can take, because the process that made
+them has exited. They pin every number in the contour at once: the 28 transcribed bearings, the
+seeded amplitudes, the Catmull–Rom control points and the core rectangle. Mutation-checked by
+changing one bearing constant by a single unit in the last place, which fails all seven.
+
+This also closes the risk named above it: the `shape.ts` constants are transcribed rather than
+imported, and nothing in CI would otherwise have caught a divergence. A drift now fails the build.
+A failure here is never a number to update — it means the contour moved, and with it every
+silhouette a user has learned to recognise (AD-6).
+
+**Verification run:** `npm run typecheck`, `npm run lint`, `npm test` (460 tests, 10 files,
 story 1's and story 2's suites unchanged), `npm run build`, `npm run licences` (136 packages,
 unchanged, no dependency added). `packages/model/dist` holds twelve emitted files, no
 `*.test.js` and no `vitest` import; the emitted specifiers are `./x.js`.
