@@ -90,6 +90,30 @@ jobs:
       - run: npm ci
       - run: npm run licences
 
+  contrast:
+    # AD-28: NFR-11's contrast floors and NFR-13's zone separation are blocking gates,
+    # computed from the AD-23 token file. Both halves run here.
+    #
+    # It does not wait for `packages/scene`, and the pending entry that said it would
+    # was wrong about why. AD-28 asks for 3:1 over the worst COMPOSITED zone field, and
+    # `opacity.zone-field-cap` luminance-clamps that composite to a single tint — so the
+    # worst case is a loop over six tints and the ratio is computable from colour values
+    # alone. The scene resolves the composite for rendering (AD-9); the gate does not
+    # need it to know what the worst one is.
+    name: contrast and deuteranopia (AD-28)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Generated CSS is in sync with the token file
+        run: npm run tokens:css -- --check
+      - name: NFR-11 contrast floors and NFR-13 zone separation
+        run: npm run contrast
+
   determinism:
     # AD-32: layout determinism is the one property that must hold on both
     # architectures, because AD-8's arithmetic guarantee is what the map rests on.
@@ -128,9 +152,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - gate: AD-28 contrast and deuteranopia gate
-            awaits: 'packages/tokens (the token file the ratios are computed from) and packages/scene'
-            note: 'Starts red by design: NFR-13 names a light-palette tint collision that design must fix, and NFR-11 exemption set must be complete before the gate is first enabled.'
           - gate: AD-29 measurement ratchet
             awaits: 'harness, packages/layout, packages/scene'
             note: 'Blocks when a measure gets worse than main. Sets no absolute threshold; the reference updates on each merge to main.'

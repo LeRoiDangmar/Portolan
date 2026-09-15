@@ -22,7 +22,8 @@
     "test": "vitest run",
     "test:determinism": "vitest run --passWithNoTests determinism",
     "licences": "node scripts/check-licences.mjs",
-    "tokens:css": "node scripts/generate-tokens-css.mjs"
+    "tokens:css": "node scripts/generate-tokens-css.mjs",
+    "contrast": "node scripts/check-contrast.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
