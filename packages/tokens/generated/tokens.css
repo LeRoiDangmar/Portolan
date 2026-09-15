@@ -129,7 +129,7 @@
   --portolan-elevation-halo-light: 'ring, 0.6px {colors.glass-light} @ 0.35 at 1.13r';
   --portolan-shape-bubble-silhouette-geometry: 'closed cubic Bézier, 28 control points';
   --portolan-shape-bubble-silhouette-amplitude: '±11% of base radius';
-  --portolan-shape-bubble-silhouette-seed: "the object's Docker ID — stable across every survey, identical in every screenshot";
+  --portolan-shape-bubble-silhouette-seed: "the object's AD-5 IDENTITY KEY — `stack/service/slot` for a replicated task, `stack/service/node` for a global one, the name for a volume or network. SUPERSEDES DESIGN.md, which says the Docker ID, and FR-13, which says the same: AD-6 is a declared departure raised upstream, because a container ID makes *the same shape across every survey* false from the first redeployment onward. Accepted cost, named there: two genuinely different containers render as one body, and the container ID stays visible in the detail panel where it misleads nobody.";
   --portolan-shape-bubble-silhouette-floor: the contour may never cross the invariant core rectangle;
   --portolan-shape-bubble-silhouette-channel: RECOGNITION ONLY. It does not survive 25% zoom-out and
     is not read as data.;
@@ -181,7 +181,7 @@
   --portolan-shape-network-octave-constraint: "the pattern modulates hue and coverage, NEVER luminance. Every cell of a patterned field measures inside the tint's own 1.13–1.19 band, so the iso-luminant guarantee and every edge floor survive it unchanged.";
   --portolan-shape-network-octave-cost: 'a pattern inside an 8px badge is a ~6px interior. Unproven at that size — see Open Questions.';
   --portolan-density-scale-steps: '0.85 compact / 1.00 standard / 1.20 roomy';
-  --portolan-density-scale-affects: 'bubble radii, {spacing.gutter}, {spacing.cell-clearance}, zone padding';
+  --portolan-density-scale-affects: 'bubble radii, {spacing.gutter}, zone padding. NOT {spacing.cell-clearance}: DESIGN.md lets density drive clearance, and AD-8 overrode that because it makes the density control a fourth relayout action and contradicts FR-16. Clearance is reserved once at the roomiest step and no longer follows density.';
   --portolan-density-scale-excludes: 'type sizes — those are {typography.scale}, a separate control';
   --portolan-spacing-1: 2px;
   --portolan-spacing-2: 4px;

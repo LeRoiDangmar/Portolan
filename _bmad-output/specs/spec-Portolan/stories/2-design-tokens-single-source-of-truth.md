@@ -124,6 +124,7 @@ Three named and accepted costs of that decision, none of them silent:
 - [x] `scripts/check-contrast.mjs` -- the AD-28 gate: five ratios over both palettes, exemptions honoured at their own floors, and zone-tint separation under both deficiencies -- reads floors from the token file
 - [x] `test/colour.test.ts` -- table-driven tests for the ported maths against `palette-cvd-analysis.md`'s published figures -- if the port disagrees with the document, the gate is measuring something else
 - [x] `test/contrast.test.ts` -- drive the real gate over fixture palettes: one passing, one failing a floor, one tripping an exemption, one failing separation -- and mutation-test it
+- [x] `test/tokens-css.test.ts` -- drive the real `--check` gate against a tampered CSS file: a changed value, a deleted declaration, a header edit -- added at review; the matrix's two generator rows had no covering test
 - [x] `.github/workflows/ci.yml` -- replace the AD-28 `pending` entry with a real job -- and update the README's pending-gate list
 - [x] `README.md` -- how the tokens are authored, how the CSS is regenerated, and what the AD-28 gate checks -- the envelope's documentation is a story-1 convention
 
@@ -138,6 +139,60 @@ Three named and accepted costs of that decision, none of them silent:
 - Given `npm run lint`, `npm run typecheck` and `npm test`, then all pass with the generated CSS committed.
 
 ## Implementation Notes
+
+**The gate is red, and it is the first of AD-28's two kinds of red — the palette is
+genuinely below its own floor.** `pastille-network-1` and `pastille-network-3` measure
+4.45:1 and 4.39:1 on `body-mid` in dark, against the 4.5:1 floor `DESIGN.md`'s own
+*Network pastille on body* row declares. Verified independently of the gate: the computed
+dark range 4.388–5.201 reproduces the "4.4 – 5.2" that row prints, and the light range
+5.762–7.612 reproduces its "5.7 – 7.6". So the table states a measured low end below the
+floor written beside it and never reconciles the two. The defect predates this story and
+is unrelated to the tint substitution — it belongs to design, and nothing here may repair
+it. Recorded in `deferred-work.md`.
+
+The reading that surfaces it is a judgement and is named here rather than buried: AD-28
+abbreviates the ratio as *"4.5:1 chassis"*, while NFR-11 and `SPEC.md` both state it as
+*"4.5:1 chassis text **and marks**"*. The requirement won over the abbreviation. Reading it
+narrowly would have left the entire badge channel ungated and made the gate green by not
+looking.
+
+**The luminance-coefficient concern the spec raised is settled, not deferred.** No gated
+pair straddles a floor between WCAG's rounded row and the full-precision sRGB row — the
+binding pair moves from 4.453 to 4.452. `test/contrast.test.ts` asserts the absence of any
+straddling pair, so a future token that lands in that gap fails rather than depending on
+which constant was picked.
+
+**Review corrections applied on top of the implementation:**
+- `scripts/check-contrast.mjs` contained four **literal NUL bytes**, used as a composite
+  map-key separator. Git classified the file as binary, so it had no diff and no
+  line-level review, permanently. Replaced with the `\u0000` escape; semantics unchanged.
+- `test/tokens-css.test.ts` added. The I/O matrix's *CSS generation* and *CSS drift* rows
+  had no covering test — the generator's helpers were exported but nothing drove the real
+  `--check`. Mutation-tested: forcing `firstDifference` to `null` turns 3 tests red.
+- Two prose values in the token file were stale against named architecture decisions, and
+  AD-23 makes this file normative, so the next story would have read them as current.
+  `shape.bubble.silhouette.seed` said *the object's Docker ID*, which **AD-6** supersedes
+  with the AD-5 identity key — a declared departure from FR-13, precisely because a
+  container ID makes *the same shape across every survey* false after the first
+  redeployment. `density.scale.affects` listed `{spacing.cell-clearance}`, which **AD-8**
+  overrode because density driving clearance makes the control a fourth relayout action
+  and contradicts FR-16. Both annotated in place rather than rewritten, so the
+  transcription survives beside the decision that supersedes it.
+
+**One §5 figure could not be reproduced and is therefore not asserted anywhere:**
+`palette-cvd-analysis.md` claims normal-vision separation improves from 6.4–6.6 to
+7.5–7.8. The superseded tints measure 5.29 dark / 2.84 light, so the lower pair appears to
+belong to the withdrawn first candidate set. The direction holds; the starting numbers do
+not.
+
+**Two figures DESIGN.md prints that the tests carry a tolerance for**, each with the reason
+written above it: *detail-panel keys* prints 5.2:1 where the value is 5.149, and the *focus
+ring* row prints ranges no single enumeration of surfaces reproduces. `floors.ts` uses the
+chassis-surface group minus `canvas` and the two node-backdrop bands, which are map rather
+than chrome; every member clears 3:1 more than threefold.
+
+**The gate's independence from `packages/scene` rests on `opacity.zone-field-cap` being
+prose the renderer must honour.** When `scene` lands, that is the assumption to re-check.
 
 **The gate is red on its first run, on a defect this story did not create and may not fix.**
 `pastille-network-1` `#4A8296` measures **4.45:1** and `pastille-network-3` `#7A7695` **4.39:1** on

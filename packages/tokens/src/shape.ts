@@ -12,7 +12,7 @@ export const shape = {
     silhouette: {
       geometry: 'closed cubic Bézier, 28 control points',
       amplitude: '±11% of base radius',
-      seed: "the object's Docker ID — stable across every survey, identical in every screenshot",
+      seed: "the object's AD-5 IDENTITY KEY — `stack/service/slot` for a replicated task, `stack/service/node` for a global one, the name for a volume or network. SUPERSEDES DESIGN.md, which says the Docker ID, and FR-13, which says the same: AD-6 is a declared departure raised upstream, because a container ID makes *the same shape across every survey* false from the first redeployment onward. Accepted cost, named there: two genuinely different containers render as one body, and the container ID stays visible in the detail panel where it misleads nobody.",
       floor: 'the contour may never cross the invariant core rectangle',
       channel: 'RECOGNITION ONLY. It does not survive 25% zoom-out and is not read as data.',
     },
