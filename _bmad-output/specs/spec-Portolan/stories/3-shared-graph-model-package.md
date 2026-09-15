@@ -233,6 +233,33 @@ caught it; the substantive claims beside it were correct.)
 
 ## Spec Change Log
 
+**2026-09-15 — two frozen decisions renegotiated by the human, after the story was marked done.**
+
+- **The wire form now carries a schema version.** This spec froze a wire form with none, and
+  nothing upstream asks for one. The case that reopened it: server and browser ship in one image
+  (AD-19) and therefore agree by construction, *except* across an upgrade, where a tab left open
+  reconnects its SSE stream to a server built from different sources and misparses in silence —
+  on a product whose central promise is that the map never lies about the cluster. Known-bad
+  state avoided: adding the field once story 9 needs it would be an amendment to a contract this
+  story had frozen, on both sides of the seam at once. **KEEP:** `WireSnapshot` stays
+  structurally identical to `Survey` and `WireFormMatchesModel` stays exact on it — the version
+  went onto `WireSurvey`, which extends it. The model carries no protocol field, and
+  `fromWire` reads the version *first*, so a stale tab fails on the upgrade rather than on a
+  collection it is wrongly told is malformed.
+- **The transcription of `shape.bubble` is now gated, not manually checked.** The human first
+  decided `model` should import `tokens` outright, so AD-38's one owner would read AD-23's one
+  source. That turned out to be unimplementable as stated, and the finding is worth recording:
+  **`tokens`' `shape` namespace is authored as prose, not as values** — `'closed cubic Bézier,
+  28 control points'`, `'±11% of base radius'`, `'54px'`. Importing it yields sentences, so the
+  graph amendment would have bought nothing and cost an arrow. The decision was remade as
+  `test/shape-transcription.test.ts`, which extracts the four numbers from the prose and fails
+  in both directions. `dependency-graph.json` is untouched and `model` keeps `imports: []`.
+  **KEEP:** the transcription itself, and the AD-8 reasoning behind the 28 literal bearings —
+  the review found no fault there, and the gate now protects it instead of a manual read.
+- **Raw control bytes removed from `wire.ts` source.** `edgeIdentity` embedded literal U+0000
+  separators and a U+0001 marker. The separator choice is sound and unchanged; written as
+  escapes, the file stops being binary to `file`, `grep` and git diffs. Behaviour identical.
+
 ## Review Triage Log
 
 **Pass 1 — blind-hunter, edge-case-hunter, verification-gap.**
