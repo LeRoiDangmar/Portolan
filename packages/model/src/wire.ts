@@ -583,9 +583,9 @@ const readCollection = <T extends { readonly key: IdentityKey }>(
  * and collapsing them is the confusion the whole absent-is-a-value rule exists to stop.
  */
 const edgeIdentity = (edge: Edge): string => {
-  const ends = `${edge.kind} ${edge.from} ${edge.to}`;
-  if (edge.kind === 'mount') return `${ends} ${edge.path} ${edge.access}`;
-  if (edge.kind === 'attachment') return `${ends} ${edge.address ?? ''}`;
+  const ends = `${edge.kind}\0${edge.from}\0${edge.to}`;
+  if (edge.kind === 'mount') return `${ends}\0${edge.path}\0${edge.access}`;
+  if (edge.kind === 'attachment') return `${ends}\0${edge.address ?? '\u0001'}`;
   return ends;
 };
 
@@ -613,7 +613,7 @@ const readEdges = (value: unknown, known: ReadonlySet<string>): readonly Edge[] 
     if (seen.has(identity)) fail(path, `duplicate ${edge.kind} edge`);
     seen.add(identity);
     if (EDGE_RULES[edge.kind].cardinality === 'one-to-many') {
-      const owner = `${edge.kind} ${edge.to}`;
+      const owner = `${edge.kind}\0${edge.to}`;
       if (owned.has(owner)) {
         fail(
           `${path}.to`,
