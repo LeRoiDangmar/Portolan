@@ -152,7 +152,31 @@ iso-luminant band, so every edge floor measured against a single tint survives u
 counterparts) must be re-derived from whichever tints land, and the `zone blob` and
 `pastille-network` values checked against their own floors. This file does not re-compute them.
 
-## 6. What is now unblocked
+## 6. Applied, 2026-09-15
+
+The tints were accepted and the rotation is now normative in `DESIGN.md` — **36 tokens**, not 12.
+The zone tint, the isoline and the network pastille each carry the same hue (measured at 0–2° apart
+on the new set, against up to 15° on the shipped one), so a network reads as one hue from its field
+to its badge. Changing the tints without the other two would have broken `FR-65`, where the hue is
+what holds a network's identity across reading levels.
+
+Every floor re-verified on the applied set: isoline 3.56–3.62:1 over its own tint against 3:1;
+pastille 5.13–5.62:1 on the body against 4.5:1 and 4.08–4.88:1 over its tint against the mode-B 4:1;
+every tint inside the 1.13–1.19 iso-luminant band; tint separation 3.38/3.39 dark and 3.81/3.74
+light under deuteranopia/protanopia.
+
+**One thing this run discovered and wrote into `DESIGN.md`, because it existed nowhere.** The first
+derivation met every single contrast floor with values like `#FF3C00` and `#D500FF` — fully saturated
+neon. **The floors do not constrain saturation.** What holds the chart register is a chroma and
+lightness band that was never written down, only implied by the shipped values: tints at C\* 4–12,
+isolines at C\* 17–40 and L\* 41–49, pastilles at C\* 18–35 and L\* 44–56. It is now a comment on the
+token block, and it belongs in the `AD-23` token file as data — otherwise the next re-derivation
+passes every gate and destroys the brand, exactly as the first one here did.
+
+**Known consequence:** every network changes colour. Only network 2 stays near its shipped hue. Any
+existing screenshot or mock is now stale.
+
+## 7. What is now unblocked
 
 The tokens story can declare a complete exemption set and a numeric threshold, so the `AD-28` gate
 can be **written** rather than deferred. It will still start red on the shipped tints until the values

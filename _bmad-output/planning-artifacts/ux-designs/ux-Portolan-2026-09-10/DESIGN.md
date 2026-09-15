@@ -98,36 +98,47 @@ colors:
   plate: '#0B1015'
   plate-light: '#FFFFFF'
 
-  # --- Network zone hues. HUE = the network's place in a six-step rotation,
+  # --- Network zone hues. Rotation replaced 2026-09-15: the shipped six collided
+  #     under deuteranopia (light tints 1 and 3 were byte-identical; the dark
+  #     palette's worst pair sat at deltaE00 1.30). The rotation is now even and
+  #     clears the ratified deltaE00 >= 3.0 floor under both deuteranopia and
+  #     protanopia, in both palettes. See ux-designs/.../palette-cvd-analysis.md.
+  #     REGISTER, load-bearing and previously unwritten: the contrast floors do NOT
+  #     constrain saturation — they are all satisfiable by fully saturated neon.
+  #     What holds the chart register is the chroma and lightness band. Tints sit at
+  #     C* 4-12; isolines at C* 17-40, L* 41-49; network pastilles at C* 18-35,
+  #     L* 44-56. A re-derivation that ignores these bands meets every floor and
+  #     still destroys the brand.
+  # --- HUE = the network's place in a six-step rotation,
   #     assigned in creation order and held for the life of the network;
   #     OCTAVE = which turn of that rotation, carried by {shape.network-octave}
   #     as a fill pattern rather than by a colour. Iso-luminant by
   #     construction: every tint sits at 1.13–1.19 against its ground, in both
   #     modes, so edge contrast does not depend on which zone an edge crosses.
-  zone-tint-1: '#0B1E28'
-  zone-tint-2: '#1B1710'
-  zone-tint-3: '#17161E'
-  zone-tint-4: '#0F2015'
-  zone-tint-5: '#231521'
-  zone-tint-6: '#141C2B'
-  zone-tint-1-light: '#D7E6EC'
-  zone-tint-2-light: '#EDE3CF'
-  zone-tint-3-light: '#E3E1EC'
-  zone-tint-4-light: '#D9E7DC'
-  zone-tint-5-light: '#F0DEE4'
-  zone-tint-6-light: '#DDE1EF'
-  zone-isoline-1: '#3F7286'
-  zone-isoline-2: '#836B3B'
-  zone-isoline-3: '#6C6885'
-  zone-isoline-4: '#437E59'
-  zone-isoline-5: '#8F6079'
-  zone-isoline-6: '#61759A'
-  zone-isoline-1-light: '#4C7E8E'
-  zone-isoline-2-light: '#8A6E2C'
-  zone-isoline-3-light: '#625E7C'
-  zone-isoline-4-light: '#42805A'
-  zone-isoline-5-light: '#9C5C7C'
-  zone-isoline-6-light: '#5A6EA0'
+  zone-tint-1: '#261A12'
+  zone-tint-2: '#1E1802'
+  zone-tint-3: '#141A16'
+  zone-tint-4: '#081C22'
+  zone-tint-5: '#121826'
+  zone-tint-6: '#201A1E'
+  zone-tint-1-light: '#F2D8DE'
+  zone-tint-2-light: '#EADCD4'
+  zone-tint-3-light: '#E0E0CA'
+  zone-tint-4-light: '#C8E8E2'
+  zone-tint-5-light: '#CEE4EC'
+  zone-tint-6-light: '#D8DEF4'
+  zone-isoline-1: '#9A6846'
+  zone-isoline-2: '#7A7054'
+  zone-isoline-3: '#447C5A'
+  zone-isoline-4: '#367A8E'
+  zone-isoline-5: '#5870A4'
+  zone-isoline-6: '#986288'
+  zone-isoline-1-light: '#AC5670'
+  zone-isoline-2-light: '#96684A'
+  zone-isoline-3-light: '#72763E'
+  zone-isoline-4-light: '#0E8276'
+  zone-isoline-5-light: '#367C90'
+  zone-isoline-6-light: '#667294'
 
   # --- Edges ----------------------------------------------------------------
   edge-attach: '#5B8494'
@@ -166,18 +177,18 @@ colors:
   pastille-stack-5-light: '#5A559A'
   pastille-stack-6-light: '#4F7434'
   pastille-stack-none-light: '#5F6E78'
-  pastille-network-1: '#4A8296'
-  pastille-network-2: '#967C46'
-  pastille-network-3: '#7A7695'
-  pastille-network-4: '#4E9268'
-  pastille-network-5: '#A46F8B'
-  pastille-network-6: '#7286B0'
-  pastille-network-1-light: '#3D6C7E'
-  pastille-network-2-light: '#7A6430'
-  pastille-network-3-light: '#55506E'
-  pastille-network-4-light: '#356B4A'
-  pastille-network-5-light: '#864C68'
-  pastille-network-6-light: '#4A5D8B'
+  pastille-network-1: '#B07A56'
+  pastille-network-2: '#948450'
+  pastille-network-3: '#6C8E78'
+  pastille-network-4: '#568EA0'
+  pastille-network-5: '#6E86BA'
+  pastille-network-6: '#AA769A'
+  pastille-network-1-light: '#965468'
+  pastille-network-2-light: '#8A5E42'
+  pastille-network-3-light: '#686A44'
+  pastille-network-4-light: '#20746A'
+  pastille-network-5-light: '#307082'
+  pastille-network-6-light: '#4C689C'
   pastille-health-nominal: '#4C9BD6'
   pastille-health-degraded: '#C08A3C'
   pastille-health-stopped: '#BF5747'
