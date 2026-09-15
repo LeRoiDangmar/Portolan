@@ -49,6 +49,13 @@ export type BubbleKind = keyof typeof BASE_RADIUS;
  *
  * The rectangle carries the name, the identifier and the pastille rail, and the contour
  * may never cross it — `shape.bubble.silhouette.floor`.
+ *
+ * THE UNDEFORMED BOUNDING BOX IS `2·baseRadius` SQUARE, not the box the seeded contour
+ * happens to occupy. `shape.pastille.capacity` pins it by its own arithmetic — *at 0.59 ×
+ * 2r — service 63.7px, container 54.3px, volume 37.8px* — and `shape.bubble.core.rule`
+ * calls the rectangle INVARIANT. Measuring the jittered control points instead would make
+ * the core a per-object value, so the pastille rail that must fit inside it would have a
+ * different width for every object, and *invariant* would be false.
  */
 export const CORE_FRACTION = {
   width: 0.59,
@@ -64,10 +71,11 @@ export interface Point {
 /**
  * The 28 fixed bearings, one per control point, as literal unit vectors.
  *
- * `cos` and `sin` of `i · 360°/28`, written out because AD-8 bans computing them. Seven
- * distinct magnitudes carry all 28: the table is built from the first octant by exact
- * sign and swap, so the star is exactly symmetric rather than symmetric to within a unit
- * in the last place.
+ * `cos` and `sin` of `i · 360°/28`, written out because AD-8 bans computing them. Eight
+ * distinct magnitudes — `cos(k · 360°/28)` for `k` in `0…7`, of which `0` and `1` are
+ * exact — carry all 28: the table is built from the first octant by exact sign and swap,
+ * so the star is exactly symmetric rather than symmetric to within a unit in the last
+ * place.
  */
 export const BEARINGS: readonly Point[] = [
   { x: 1, y: 0 },
@@ -222,23 +230,16 @@ const segmentsThrough = (points: readonly ContourPoint[]): readonly CubicSegment
     };
   });
 
-/** The undeformed bounding box, as half-extents about the body centre. */
-const coreOf = (points: readonly ContourPoint[]): CoreRect => {
-  let minX = 0;
-  let maxX = 0;
-  let minY = 0;
-  let maxY = 0;
-  for (const { point } of points) {
-    if (point.x < minX) minX = point.x;
-    if (point.x > maxX) maxX = point.x;
-    if (point.y < minY) minY = point.y;
-    if (point.y > maxY) maxY = point.y;
-  }
-  return {
-    halfWidth: (CORE_FRACTION.width * (maxX - minX)) / 2,
-    halfHeight: (CORE_FRACTION.height * (maxY - minY)) / 2,
-  };
-};
+/**
+ * The invariant core, as half-extents about the body centre.
+ *
+ * A function of the base radius alone: the undeformed bounding box is `2r` square, so the
+ * half-extents are `0.59·r` and `0.50·r` for every object of that kind, whatever its seed.
+ */
+const coreOf = (baseRadius: number): CoreRect => ({
+  halfWidth: (CORE_FRACTION.width * (2 * baseRadius)) / 2,
+  halfHeight: (CORE_FRACTION.height * (2 * baseRadius)) / 2,
+});
 
 /**
  * The seeded silhouette of one object (AD-6).
@@ -263,7 +264,7 @@ export const silhouette = (key: IdentityKey, baseRadius: number): Silhouette => 
       point: { x: bearing.x * radius, y: bearing.y * radius },
     };
   });
-  return { key, baseRadius, points, segments: segmentsThrough(points), core: coreOf(points) };
+  return { key, baseRadius, points, segments: segmentsThrough(points), core: coreOf(baseRadius) };
 };
 
 /**

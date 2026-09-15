@@ -9,44 +9,17 @@ import {
   CORE_FRACTION,
   SILHOUETTE_AMPLITUDE,
   SILHOUETTE_POINTS,
-  amplitudeAt,
   clearsCore,
   pointOnSegment,
   silhouette,
 } from './silhouette.ts';
 
 /**
- * AD-6, and the floor `packages/tokens/src/shape.ts` states.
+ * The geometry `packages/tokens/src/shape.ts` fixes, and the floor it states.
  *
- * The seed is re-derived here from the ALGORITHM rather than from the module: FNV-1a with
- * its published constants, written out a second time below. That independence is story
- * 2's rule and it is what makes this a determinism test rather than a tautology — a test
- * that called the module to compute its own expectation would agree with any change.
+ * AD-6's determinism claim lives in `silhouette.determinism.test.ts`, so the determinism
+ * job's filename filter reaches it; what is here is shape.
  */
-
-/**
- * FNV-1a, 32-bit, from the published constants in decimal — 2166136261 and 16777619 —
- * rather than the hexadecimal the module writes them in, and with the two bytes of each
- * UTF-16 unit taken by arithmetic rather than by bit shifts. Identity keys are ASCII by
- * AD-5's own character set, so a code-point walk and a code-unit walk agree.
- */
-const fnv1a = (text: string): number => {
-  let hash = 2166136261;
-  for (const character of text) {
-    const unit = character.charCodeAt(0);
-    hash = Math.imul(hash ^ (unit % 256), 16777619);
-    hash = Math.imul(hash ^ Math.floor(unit / 256), 16777619);
-  }
-  return hash >>> 0;
-};
-
-const expectedAmplitude = (key: string, index: number): number => {
-  let hash = Math.imul(fnv1a(key) ^ (index + 1), 16777619) >>> 0;
-  hash = (hash ^ (hash >>> 15)) >>> 0;
-  hash = Math.imul(hash, 16777619) >>> 0;
-  hash = (hash ^ (hash >>> 13)) >>> 0;
-  return (((hash % 2001) - 1000) * 0.11) / 1000;
-};
 
 const KEYS: readonly IdentityKey[] = [
   replicatedTaskKey('blog', 'web', 3),
@@ -58,89 +31,6 @@ const KEYS: readonly IdentityKey[] = [
   volumeKey('pg-data'),
 ];
 
-describe('the silhouette is a pure function of the identity key (AD-6)', () => {
-  it('returns the identical contour when asked twice', () => {
-    for (const key of KEYS) {
-      const first = silhouette(key, BASE_RADIUS.container);
-      const second = silhouette(key, BASE_RADIUS.container);
-      expect(second).toEqual(first);
-      // Byte-identical, not merely deep-equal: every number is compared as a number, and
-      // `toEqual` on two independently built objects is exactly that check.
-      expect(JSON.stringify(second)).toBe(JSON.stringify(first));
-    }
-  });
-
-  it('matches an independently derived seed, point for point', () => {
-    for (const key of KEYS) {
-      for (let index = 0; index < SILHOUETTE_POINTS; index += 1) {
-        expect(amplitudeAt(key, index)).toBeCloseTo(expectedAmplitude(key, index), 15);
-      }
-    }
-  });
-
-  /**
-   * The matrix asks for byte-identity ACROSS PROCESSES, and neither test above reaches
-   * that far: both re-derive their expectation inside the run they are checking. These
-   * digests were computed once, on 2026-09-15, and committed — so the assertion is made by
-   * a process that has already exited, which is the only form the claim can take. They
-   * cover every number in the contour at once: the 28 transcribed bearings, the seeded
-   * amplitudes, the Catmull–Rom control points and the core rectangle, each rendered by
-   * `JSON.stringify`, whose output for a double ECMAScript specifies exactly.
-   *
-   * A failure here is never a number to update. It means the contour moved, and with it
-   * every silhouette a user has learned to recognise (AD-6) — so the change that moved it
-   * is what needs justifying, not this table.
-   */
-  const GOLDEN_CONTOURS: readonly (readonly [IdentityKey, number])[] = [
-    ['container:blog/web/3', 1570342678],
-    ['container:blog/web/4', 2930378855],
-    ['container:/adhoc/1', 2631683718],
-    ['volume:web', 4205733418],
-    ['network:web', 669698794],
-    ['volume:pgdata', 2730006845],
-    ['volume:pg-data', 3253743713],
-  ];
-
-  it.each(GOLDEN_CONTOURS)('reproduces the committed contour for %s', (key, digest) => {
-    expect(fnv1a(JSON.stringify(silhouette(key, BASE_RADIUS.container)))).toBe(digest);
-  });
-
-  it('would report a drift, so the digests above are evidence and not decoration', () => {
-    const moved = silhouette('volume:web', BASE_RADIUS.container + 1);
-    expect(fnv1a(JSON.stringify(moved))).not.toBe(4205733418);
-  });
-
-  it('gives a volume and a network of the same name two different contours', () => {
-    const volume = silhouette(volumeKey('web'), BASE_RADIUS.volume);
-    const network = silhouette(networkKey('web'), BASE_RADIUS.volume);
-    expect(network.points.map((point) => point.amplitude)).not.toEqual(
-      volume.points.map((point) => point.amplitude),
-    );
-  });
-
-  it('takes no neighbour and no position — the key and the base radius are the whole input', () => {
-    expect(silhouette.length).toBe(2);
-  });
-
-  it('scales with the base radius and is seeded independently of it', () => {
-    const key = replicatedTaskKey('blog', 'web', 3);
-    const small = silhouette(key, BASE_RADIUS.volume);
-    const large = silhouette(key, BASE_RADIUS.service);
-    expect(large.points.map((point) => point.amplitude)).toEqual(
-      small.points.map((point) => point.amplitude),
-    );
-    for (let index = 0; index < SILHOUETTE_POINTS; index += 1) {
-      const a = small.points[index];
-      const b = large.points[index];
-      expect(a && b).toBeTruthy();
-      expect(b?.radius).toBeCloseTo(
-        ((a?.radius ?? 0) * BASE_RADIUS.service) / BASE_RADIUS.volume,
-        10,
-      );
-    }
-  });
-});
-
 describe('the contour is `shape.bubble.silhouette`, transcribed', () => {
   it('carries 28 control points', () => {
     expect(SILHOUETTE_POINTS).toBe(28);
@@ -149,6 +39,10 @@ describe('the contour is `shape.bubble.silhouette`, transcribed', () => {
       expect(silhouette(key, BASE_RADIUS.container).points).toHaveLength(28);
       expect(silhouette(key, BASE_RADIUS.container).segments).toHaveLength(28);
     }
+  });
+
+  it('reads the three base radii from `shape.bubble.radius`', () => {
+    expect(BASE_RADIUS).toEqual({ service: 54, container: 46, volume: 32 });
   });
 
   it('places the 28 bearings on the unit circle, at equal steps', () => {
@@ -215,26 +109,49 @@ const crossesCore = (contour: Silhouette): boolean => {
   return false;
 };
 
-describe('the contour never crosses the invariant core (`shape.bubble.core`)', () => {
-  it('reads the core as 0.59w × 0.50h of the undeformed bounding box', () => {
+describe('the core is invariant (`shape.bubble.core`)', () => {
+  it('reads 0.59w × 0.50h of a bounding box that is 2r square', () => {
     expect(CORE_FRACTION).toEqual({ width: 0.59, height: 0.5 });
-    const contour = silhouette(replicatedTaskKey('blog', 'web', 3), BASE_RADIUS.container);
-    // Re-derived from the control points rather than read back from `core`.
-    const xs = contour.points.map((point) => point.point.x);
-    const ys = contour.points.map((point) => point.point.y);
-    const width = Math.max(...xs) - Math.min(...xs);
-    const height = Math.max(...ys) - Math.min(...ys);
-    expect(contour.core.halfWidth).toBeCloseTo((0.59 * width) / 2, 12);
-    expect(contour.core.halfHeight).toBeCloseTo((0.5 * height) / 2, 12);
+    // Re-derived from `shape.pastille.capacity`'s own arithmetic — *at 0.59 × 2r —
+    // service 63.7px, container 54.3px, volume 37.8px* — and not from the control points,
+    // which are seeded and would make the expectation agree with any jitter.
+    expect(2 * silhouette(KEYS[0] as IdentityKey, BASE_RADIUS.service).core.halfWidth).toBeCloseTo(
+      63.7,
+      1,
+    );
+    expect(
+      2 * silhouette(KEYS[0] as IdentityKey, BASE_RADIUS.container).core.halfWidth,
+    ).toBeCloseTo(54.3, 1);
+    expect(2 * silhouette(KEYS[0] as IdentityKey, BASE_RADIUS.volume).core.halfWidth).toBeCloseTo(
+      37.8,
+      1,
+    );
   });
 
-  it('clears it at every control point and everywhere on the curve between them', () => {
+  it('is the same rectangle for every key of one kind, which is what invariant means', () => {
+    const cores = [...KEYS, ...SWEEP].map((key) => silhouette(key, BASE_RADIUS.container).core);
+    for (const core of cores) {
+      expect(core.halfWidth).toBe(0.59 * BASE_RADIUS.container);
+      expect(core.halfHeight).toBe(0.5 * BASE_RADIUS.container);
+    }
+  });
+
+  it('is not measured from the seeded control points', () => {
+    // The seeded bounding box varies by key; the core must not follow it.
+    const boxes = KEYS.map((key) => {
+      const xs = silhouette(key, BASE_RADIUS.container).points.map((point) => point.point.x);
+      return Math.max(...xs) - Math.min(...xs);
+    });
+    expect(new Set(boxes).size).toBeGreaterThan(1);
+  });
+
+  it('is never crossed, at any control point or anywhere on the curve between them', () => {
     for (const key of SWEEP) {
       expect(crossesCore(silhouette(key, BASE_RADIUS.container))).toBe(false);
     }
   });
 
-  it('clears it at all three base radii, because the core is a fraction of the box', () => {
+  it('is never crossed at any of the three base radii', () => {
     for (const key of KEYS) {
       for (const radius of Object.values(BASE_RADIUS)) {
         expect(crossesCore(silhouette(key, radius))).toBe(false);
@@ -244,7 +161,7 @@ describe('the contour never crosses the invariant core (`shape.bubble.core`)', (
 
   it('would report a crossing if one happened', () => {
     // Mutation check on the check itself: a core widened past the contour must be caught,
-    // or the test above passes whatever the geometry does.
+    // or the tests above pass whatever the geometry does.
     const contour = silhouette(replicatedTaskKey('blog', 'web', 3), BASE_RADIUS.container);
     const swollen: Silhouette = {
       ...contour,

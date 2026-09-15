@@ -147,9 +147,12 @@ export const compareEdges = (a: Edge, b: Edge): number => {
     if (a.access !== b.access) return a.access < b.access ? -1 : 1;
   }
   if (a.kind === 'attachment' && b.kind === 'attachment') {
-    const left = a.address ?? '';
-    const right = b.address ?? '';
-    if (left !== right) return left < right ? -1 : 1;
+    // An absent address is not an empty one. Coalescing the two to `''` would make an
+    // attachment that reports no IP compare equal to one that reports an empty string,
+    // which is the conflation `address?` exists to prevent. Absent sorts first.
+    if (a.address === undefined) return b.address === undefined ? 0 : -1;
+    if (b.address === undefined) return 1;
+    if (a.address !== b.address) return a.address < b.address ? -1 : 1;
   }
   return 0;
 };

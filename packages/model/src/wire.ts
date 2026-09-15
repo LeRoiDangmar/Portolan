@@ -178,16 +178,29 @@ export interface WireSurvey {
 }
 
 type Assert<T extends true> = T;
-type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+
+/**
+ * Type IDENTITY, not mutual assignability.
+ *
+ * The deferred-conditional trick compares the two types under TypeScript's own identity
+ * relation, which distinguishes an optional property from a required one and from one
+ * widened with `| undefined`. Mutual assignability does not: `readonly x?: string` added
+ * to one side alone is assignable both ways, so a field `toWire` silently drops would
+ * compile. The model already carries an optional field — `AttachmentEdge.address` — so
+ * that is the case this has to catch rather than a hypothetical one.
+ */
+type Exact<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 
 /**
  * AD-42's drift guard, and it is the type checker rather than a test that holds it.
  *
  * Adding a field to `Survey` without adding it to `WireSurvey` — or widening one of them
- * and not the other — stops compiling here, on the build that introduced it. A round-trip
- * test cannot catch that: it only ever sees the fields the fixture was written with.
+ * and not the other, or making one optional on one side alone — stops compiling here, on
+ * the build that introduced it. A round-trip test cannot catch that: it only ever sees the
+ * fields the fixture was written with.
  */
-export type WireFormMatchesModel = Assert<Mutual<WireSurvey, Survey>>;
+export type WireFormMatchesModel = Assert<Exact<WireSurvey, Survey>>;
 
 // --- model → wire -----------------------------------------------------------
 
@@ -358,6 +371,11 @@ const readTimestamp = (record: Record<string, unknown>, field: string, path: str
       `${path}.${field}`,
       `expected an ISO 8601 timestamp with an offset, got ${JSON.stringify(value)}`,
     );
+  }
+  // The shape is not the value: `2026-13-45T99:99:99Z` matches the pattern and parses to
+  // `NaN`, which is the one number FR-5 computes staleness from.
+  if (Number.isNaN(Date.parse(value))) {
+    return fail(`${path}.${field}`, `is not a readable instant, got ${JSON.stringify(value)}`);
   }
   return value;
 };
@@ -557,19 +575,80 @@ const readCollection = <T extends { readonly key: IdentityKey }>(
  * payload is a transport failure, not a cluster with fewer objects in it, and a product
  * whose one promise is honesty may not silently draw the difference.
  */
+/**
+ * One string per edge, so two identical edges can be told from two different ones.
+ *
+ * An absent address takes a marker no address can be, rather than the empty string: an
+ * attachment that reports no IP and one that reports an empty one are not the same edge,
+ * and collapsing them is the confusion the whole absent-is-a-value rule exists to stop.
+ */
+const edgeIdentity = (edge: Edge): string => {
+  const ends = `${edge.kind} ${edge.from} ${edge.to}`;
+  if (edge.kind === 'mount') return `${ends} ${edge.path} ${edge.access}`;
+  if (edge.kind === 'attachment') return `${ends} ${edge.address ?? ''}`;
+  return ends;
+};
+
+/**
+ * The edge list, checked against the three things a per-edge read cannot see: that no edge
+ * is sent twice, that `EDGE_RULES`'s one-to-many kinds really are one-to-many, and that
+ * both endpoints name an object the survey actually carries.
+ *
+ * The last is not pedantry: a `hosts` edge onto a volume in no collection draws a mount
+ * from nothing, and against six empty collections EVERY edge is dangling — which is a
+ * payload the map would render as a cluster that does not exist.
+ */
+const readEdges = (value: unknown, known: ReadonlySet<string>): readonly Edge[] => {
+  const seen = new Set<string>();
+  const owned = new Set<string>();
+  return readList(value, 'edges').map((entry, index) => {
+    const path = `edges[${index}]`;
+    const edge = readEdge(entry, path);
+    for (const end of ['from', 'to'] as const) {
+      if (!known.has(edge[end])) {
+        fail(`${path}.${end}`, `no object in this survey has key ${JSON.stringify(edge[end])}`);
+      }
+    }
+    const identity = edgeIdentity(edge);
+    if (seen.has(identity)) fail(path, `duplicate ${edge.kind} edge`);
+    seen.add(identity);
+    if (EDGE_RULES[edge.kind].cardinality === 'one-to-many') {
+      const owner = `${edge.kind} ${edge.to}`;
+      if (owned.has(owner)) {
+        fail(
+          `${path}.to`,
+          `${JSON.stringify(edge.to)} already has a ${edge.kind} edge, and ${edge.kind} is one-to-many`,
+        );
+      }
+      owned.add(owner);
+    }
+    return edge;
+  });
+};
+
 export const fromWire = (payload: unknown): Survey => {
   const record = readRecord(payload, 'survey');
   if (record['edges'] === undefined) fail('edges', 'missing');
-  return {
-    takenAt: readTimestamp(record, 'takenAt', 'survey'),
-    nodes: readCollection(record, 'nodes', readNode),
-    networks: readCollection(record, 'networks', readNetwork),
-    volumes: readCollection(record, 'volumes', readVolume),
-    stacks: readCollection(record, 'stacks', readStack),
-    services: readCollection(record, 'services', readService),
-    containers: readCollection(record, 'containers', readContainer),
-    edges: readList(record['edges'], 'edges').map((entry, index) =>
-      readEdge(entry, `edges[${index}]`),
+  const takenAt = readTimestamp(record, 'takenAt', 'survey');
+  const nodes = readCollection(record, 'nodes', readNode);
+  const networks = readCollection(record, 'networks', readNetwork);
+  const volumes = readCollection(record, 'volumes', readVolume);
+  const stacks = readCollection(record, 'stacks', readStack);
+  const services = readCollection(record, 'services', readService);
+  const containers = readCollection(record, 'containers', readContainer);
+  const known = new Set<string>(
+    [...nodes, ...networks, ...volumes, ...stacks, ...services, ...containers].map(
+      (object) => object.key,
     ),
+  );
+  return {
+    takenAt,
+    nodes,
+    networks,
+    volumes,
+    stacks,
+    services,
+    containers,
+    edges: readEdges(record['edges'], known),
   };
 };

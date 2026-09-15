@@ -2,7 +2,7 @@
 title: 'The shared graph model package'
 type: 'feature'
 created: '2026-09-15'
-status: 'in-progress'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '3d849d791e54a15cd8f487a759f6738b91d78f5d'
@@ -226,12 +226,78 @@ silhouette a user has learned to recognise (AD-6).
 
 **Verification run:** `npm run typecheck`, `npm run lint`, `npm test` (460 tests, 10 files,
 story 1's and story 2's suites unchanged), `npm run build`, `npm run licences` (136 packages,
-unchanged, no dependency added). `packages/model/dist` holds twelve emitted files, no
-`*.test.js` and no `vitest` import; the emitted specifiers are `./x.js`.
+unchanged, no dependency added). `packages/model/dist` holds 28 emitted files — seven
+modules times `.js`, `.js.map`, `.d.ts`, `.d.ts.map`, plus `.tsbuildinfo` — with no `*.test.js` and no
+`vitest` import; the emitted specifiers are `./x.js`. (The count read "twelve" until the review
+caught it; the substantive claims beside it were correct.)
 
 ## Spec Change Log
 
 ## Review Triage Log
+
+**Pass 1 — blind-hunter, edge-case-hunter, verification-gap.**
+
+- `high` — **The invariant core is measured from the seeded hull, not the undeformed box.**
+  `shape.pastille.capacity` pins *undeformed bounding box* to `2·baseRadius` by its own arithmetic
+  (0.59 x 2r = 63.7 / 54.3 / 37.8px). Measured at r=46 the core half-width should be 27.14 for every
+  object; it is 27.01 for `network:frontend` and 29.05 for `volume:pgdata` — a 7.5% spread, always
+  wider than specified. The rail capacity `shape.ts` computes is therefore wrong per object. The
+  covering test re-derives its expectation from the same seeded points, so it agrees with the defect
+  by construction. Grouped with: the bounding box ignores Catmull-Rom overshoot, and initialises its
+  extents to 0 rather than +/-Infinity.
+- `medium` — **`fromWire` under-validates the edge list.** Confirmed by running it: two `hosts` edges
+  onto one volume are accepted though `EDGE_RULES.hosts.cardinality` is `one-to-many`; an identical
+  edge repeated is accepted; and an edge whose endpoints name objects in no collection is accepted
+  against empty collections. `cardinality` is declared, exported and read nowhere, while the file
+  header claims it is what the validator checks against. A dangling endpoint is what a later
+  reachability walk traverses into.
+- `medium` — **Timestamps are validated by shape only.** `2026-13-45T99:99:99Z` is accepted and
+  `Date.parse` of it is `NaN`. `takenAt` is the one value FR-5 computes staleness from.
+- `medium` — **`edges.ts` and `survey.ts` ship with no test.** Pre-verified by the verification-gap
+  layer with three surviving mutations: deleting the mount tie-break in `compareEdges`, dropping the
+  `containers` sort in `sortSurvey`, and removing `...survey.stacks` from `surveyObjects` each leave
+  typecheck and all 460 tests green. This is the acceptance criterion on total, input-independent
+  order, unguarded. Grouped with: `compareEdges` conflates an absent address with `''`, the case its
+  own doc comment says it exists to prevent.
+- `medium` — **The AD-42 drift guard is blind to optional fields.** Pre-verified: adding
+  `readonly propagation?: string` to `MountEdge` and not to `WireMountEdge` compiles and passes,
+  while `toWire` silently drops it. Mutual assignability does not separate optional keys, and the
+  model already uses one (`AttachmentEdge.address?`), so the class is live rather than theoretical.
+- `medium` — **The two-architecture determinism job runs nothing.** Pre-verified: `test:determinism`
+  is `vitest run --passWithNoTests determinism`, a filename filter that matches no file, so the
+  `ubuntu-24.04-arm` leg asserts zero while the golden digests claim byte-identity *on every
+  architecture*. They run only on the single-arch unit job.
+- `medium` — **The `dist` acceptance criterion is checked by hand alone.** Pre-verified: deleting
+  `exclude` from `packages/model/tsconfig.json` restores the defect — `wire.test.js` with a top-level
+  `vitest` import inside a package whose `files` is `["dist"]` — with lint, typecheck, build and all
+  460 tests green. `test/envelope.test.ts` reads `references` and `paths` and never `exclude`.
+- `medium` — **Two assertions that cannot fail.** `wire.test.ts`'s *prefixes every rejection* calls
+  `fromWire` in a bare `try` with its expectations only in the `catch`, so a row that stopped throwing
+  would pass silently; one row's `corrupt` is already a no-op.
+- `medium` — **The identity builders accept what the parser rejects.** `volumeKey('-leading')`
+  returns a value typed `IdentityKey` for which `isIdentityKey` is `false`. The collector can mint a
+  key its own `fromWire` rejects at the far end of the seam.
+- `low` — **`identityKind` contradicts its own contract.** Documented as reading the kind *without
+  parsing its body*; it calls `parseIdentityKey`, allocates, and throws on a key whose static type
+  says it is well formed. It is the function AD-36's picking path calls per hit. Grouped with:
+  `silhouette.ts` says *seven distinct magnitudes* where the table uses eight.
+- `false` — **Unknown wire fields and unknown collections are silently dropped.** The premise is
+  version skew across the seam, and CAP-23 rules it out by construction: one image serves both the
+  server and the browser bundle it talks to, so sender and receiver are always the same build. There
+  is no deployment in which one end is ahead of the other.
+- `low`, rejected — **Model types permit values their own wire form rejects** (`name: ''`,
+  `emptySurvey('nonsense')`). Docker cannot issue an empty object name, so no survey a collector
+  builds reaches it; the fix is branded strings or a shared validator, which is public surface rather
+  than a direct correction.
+- `low`, rejected — **`silhouette` does not guard a zero, negative or non-finite `baseRadius`.** No
+  caller exists and none was shown reachable; the fix adds a guard on a hot path for a state never
+  demonstrated.
+- rejected — **The verification record says twelve emitted files where `dist` holds 28.** True, and
+  the fix edits this build's spec. Corrected in place as a record-keeping matter rather than routed.
+- `medium`, deferred — **`running > desired` matches none of FR-12's three readings.** Swarm reports
+  it transiently during a rolling update, so rejecting it at the wire would refuse a real cluster; the
+  model storing the counted pair faithfully is correct. The missing branch belongs to the story that
+  draws the health mark, and the enumeration it is missing from is the PRD's.
 
 ## Design Notes
 

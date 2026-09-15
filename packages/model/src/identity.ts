@@ -40,6 +40,9 @@ export type IdentityKey = `${ObjectKind}:${string}`;
 /** The separator between the kind and the body. */
 export const KIND_SEPARATOR = ':';
 
+/** The same separator as a code unit, so {@link identityKind} can read it without slicing. */
+const KIND_SEPARATOR_CODE = KIND_SEPARATOR.charCodeAt(0);
+
 /** The separator between a container key's three segments. */
 export const SEGMENT_SEPARATOR = '/';
 
@@ -48,13 +51,40 @@ export interface Identified {
   readonly key: IdentityKey;
 }
 
+/** A name or ID segment: Docker's own character set, and nothing that could be a separator. */
+const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
+
+const reject: (key: string, problem: string) => never = (key, problem) => {
+  throw new Error(`identity key ${JSON.stringify(key)}: ${problem}`);
+};
+
+/**
+ * The one rule the builders and the parser share.
+ *
+ * A builder that minted what the parser rejects would let the collector send a key its
+ * own `fromWire` refuses at the far end of the seam — a `IdentityKey`-typed value for
+ * which `isIdentityKey` is false. The two halves of AD-5 have to agree, so they agree by
+ * calling the same test with the same message.
+ */
+const segment = (key: string, value: string, what: string): void => {
+  if (!SEGMENT.test(value)) reject(key, `malformed ${what}`);
+};
+
 // --- Builders, one per kind ------------------------------------------------
 
 /** A node, by Docker ID — stable across `stack deploy` (AD-5). */
-export const nodeKey = (id: string): IdentityKey => `node:${id}`;
+export const nodeKey = (id: string): IdentityKey => {
+  const key: IdentityKey = `node:${id}`;
+  segment(key, id, 'body');
+  return key;
+};
 
 /** A service, by Docker ID — stable across `stack deploy` (AD-5). */
-export const serviceKey = (id: string): IdentityKey => `service:${id}`;
+export const serviceKey = (id: string): IdentityKey => {
+  const key: IdentityKey = `service:${id}`;
+  segment(key, id, 'body');
+  return key;
+};
 
 /**
  * A stack, by name.
@@ -63,13 +93,25 @@ export const serviceKey = (id: string): IdentityKey => `service:${id}`;
  * rather than a Docker object: it has no ID to be keyed by, and its name is what an admin
  * types (FR-80). One format per kind still holds.
  */
-export const stackKey = (name: string): IdentityKey => `stack:${name}`;
+export const stackKey = (name: string): IdentityKey => {
+  const key: IdentityKey = `stack:${name}`;
+  segment(key, name, 'body');
+  return key;
+};
 
 /** A network, by name (AD-5). */
-export const networkKey = (name: string): IdentityKey => `network:${name}`;
+export const networkKey = (name: string): IdentityKey => {
+  const key: IdentityKey = `network:${name}`;
+  segment(key, name, 'body');
+  return key;
+};
 
 /** A volume, by name (AD-5). */
-export const volumeKey = (name: string): IdentityKey => `volume:${name}`;
+export const volumeKey = (name: string): IdentityKey => {
+  const key: IdentityKey = `volume:${name}`;
+  segment(key, name, 'body');
+  return key;
+};
 
 /**
  * A replicated service task, by `stack/service/slot` (AD-5).
@@ -79,8 +121,14 @@ export const volumeKey = (name: string): IdentityKey => `volume:${name}`;
  *
  * A task of a standalone service passes an empty `stack`, giving `container:/adhoc/1`.
  */
-export const replicatedTaskKey = (stack: string, service: string, slot: number): IdentityKey =>
-  `container:${stack}${SEGMENT_SEPARATOR}${service}${SEGMENT_SEPARATOR}${slot}`;
+export const replicatedTaskKey = (stack: string, service: string, slot: number): IdentityKey => {
+  const key: IdentityKey = `container:${stack}${SEGMENT_SEPARATOR}${service}${SEGMENT_SEPARATOR}${slot}`;
+  // The stack segment is empty for a standalone service, and only then.
+  if (stack !== '') segment(key, stack, 'stack segment');
+  segment(key, service, 'service segment');
+  segment(key, `${slot}`, 'slot or node segment');
+  return key;
+};
 
 /**
  * A global service task, by `stack/service/node` (AD-5).
@@ -89,8 +137,13 @@ export const replicatedTaskKey = (stack: string, service: string, slot: number):
  * survives. The third segment is the node's Docker ID — the body of its own
  * {@link nodeKey} — so the two agree wherever the collector joins them.
  */
-export const globalTaskKey = (stack: string, service: string, node: string): IdentityKey =>
-  `container:${stack}${SEGMENT_SEPARATOR}${service}${SEGMENT_SEPARATOR}${node}`;
+export const globalTaskKey = (stack: string, service: string, node: string): IdentityKey => {
+  const key: IdentityKey = `container:${stack}${SEGMENT_SEPARATOR}${service}${SEGMENT_SEPARATOR}${node}`;
+  if (stack !== '') segment(key, stack, 'stack segment');
+  segment(key, service, 'service segment');
+  segment(key, node, 'slot or node segment');
+  return key;
+};
 
 // --- The parser ------------------------------------------------------------
 
@@ -152,13 +205,6 @@ export type ParsedIdentityKey =
 export const isObjectKind = (value: string): value is ObjectKind =>
   (OBJECT_KINDS as readonly string[]).includes(value);
 
-/** A name or ID segment: Docker's own character set, and nothing that could be a separator. */
-const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
-
-const reject = (key: string, problem: string): never => {
-  throw new Error(`identity key ${JSON.stringify(key)}: ${problem}`);
-};
-
 /**
  * Parse an identity key, or throw naming what failed.
  *
@@ -215,8 +261,18 @@ export const isIdentityKey = (value: unknown): value is IdentityKey => {
   }
 };
 
-/** The kind a key is qualified by, without parsing its body. */
-export const identityKind = (key: IdentityKey): ObjectKind => parseIdentityKey(key).kind;
+/**
+ * The kind a key is qualified by, without parsing its body.
+ *
+ * Six prefix comparisons and no allocation: AD-36's picking path calls this once per hit,
+ * and a parse that builds a record and can throw is the wrong shape for that.
+ */
+export const identityKind = (key: IdentityKey): ObjectKind => {
+  for (const kind of OBJECT_KINDS) {
+    if (key.startsWith(kind) && key.charCodeAt(kind.length) === KIND_SEPARATOR_CODE) return kind;
+  }
+  return reject(key, 'unknown object kind');
+};
 
 // --- The total order (AD-7) -------------------------------------------------
 

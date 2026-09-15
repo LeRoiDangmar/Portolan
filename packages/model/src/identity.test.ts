@@ -127,6 +127,23 @@ describe('the parser reads back what the builders wrote', () => {
     expect(isIdentityKey(key)).toBe(false);
   });
 
+  it.each([
+    ['a leading dash', (): unknown => volumeKey('-leading')],
+    ['a slash in a name', (): unknown => networkKey('pg/data')],
+    ['a colon in a name', (): unknown => stackKey('pg:data')],
+    ['an empty name', (): unknown => volumeKey('')],
+    ['an empty Docker ID', (): unknown => nodeKey('')],
+    ['a slash in a service ID', (): unknown => serviceKey('a/b')],
+    ['a slash in a task’s service segment', (): unknown => replicatedTaskKey('blog', 'a/b', 1)],
+    ['a malformed stack on a task', (): unknown => replicatedTaskKey('-blog', 'web', 1)],
+    ['a negative slot', (): unknown => replicatedTaskKey('blog', 'web', -1)],
+    ['an empty node on a global task', (): unknown => globalTaskKey('infra', 'agent', '')],
+  ])('refuses to build a key with %s', (_what, build) => {
+    // A builder that minted what the parser rejects would let the collector send a key
+    // its own `fromWire` refuses at the far end of the seam.
+    expect(build).toThrow(/identity key/);
+  });
+
   it('accepts every key the builders produce', () => {
     const keys = [
       replicatedTaskKey('blog', 'web', 3),

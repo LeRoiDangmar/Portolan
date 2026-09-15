@@ -324,19 +324,65 @@ const rows: readonly [string, (body: Record<string, unknown>) => void, RegExp][]
     /^wire: containers\[0\]\.key: identity key "container:blog\/web"/,
   ],
   [
-    'a payload that is not an object at all',
-    () => undefined,
-    /^wire: survey: expected an object, got string$/,
+    'a timestamp of the right shape that is not an instant',
+    (body) => {
+      body['takenAt'] = '2026-13-45T99:99:99Z';
+    },
+    /^wire: survey\.takenAt: is not a readable instant, got "2026-13-45T99:99:99Z"$/,
+  ],
+  [
+    'a network created at an instant no clock can read',
+    (body) => {
+      const network = (body['networks'] as Record<string, unknown>[])[0];
+      if (network) network['createdAt'] = '2026-08-32T00:00:00Z';
+    },
+    /^wire: networks\[0\]\.createdAt: is not a readable instant/,
+  ],
+  [
+    'the same edge sent twice',
+    (body) => {
+      const edges = body['edges'] as Record<string, unknown>[];
+      edges.push({ ...edges[7] });
+    },
+    /^wire: edges\[9\]: duplicate mount edge$/,
+  ],
+  [
+    'a second one-to-many edge onto one endpoint',
+    (body) => {
+      const edges = body['edges'] as Record<string, unknown>[];
+      edges.push({ kind: 'hosts', from: 'node:n7', to: 'volume:pgdata' });
+    },
+    /^wire: edges\[9\]\.to: "volume:pgdata" already has a hosts edge, and hosts is one-to-many$/,
+  ],
+  [
+    'an edge whose endpoint is in no collection',
+    (body) => {
+      const edge = (body['edges'] as Record<string, unknown>[])[1];
+      if (edge) edge['to'] = 'volume:absent';
+    },
+    /^wire: edges\[1\]\.to: no object in this survey has key "volume:absent"$/,
+  ],
+  [
+    'every edge dangling against emptied collections',
+    (body) => {
+      for (const collection of ['nodes', 'networks', 'volumes', 'stacks', 'services', 'containers'])
+        body[collection] = [];
+    },
+    /^wire: edges\[0\]\.from: no object in this survey has key "node:n7"$/,
   ],
 ];
 
 describe('fromWire rejects an untrusted payload, naming the path', () => {
-  it.each(rows)('rejects %s', (what, corrupt, message) => {
+  it.each(rows)('rejects %s', (_what, corrupt, message) => {
     const body = payload();
     corrupt(body);
-    const given: unknown =
-      what === 'a payload that is not an object at all' ? 'not a survey' : body;
-    expect(() => fromWire(given)).toThrow(message);
+    expect(() => fromWire(body)).toThrow(message);
+  });
+
+  it('rejects a payload that is not an object at all', () => {
+    expect(() => fromWire('not a survey')).toThrow(
+      /^wire: survey: expected an object, got string$/,
+    );
   });
 
   it('throws rather than returning a partial survey', () => {
@@ -350,15 +396,19 @@ describe('fromWire rejects an untrusted payload, naming the path', () => {
   });
 
   it('prefixes every rejection, so a caller can tell one from any other failure', () => {
-    for (const [, corrupt] of rows) {
+    for (const [what, corrupt] of rows) {
       const body = payload();
       corrupt(body);
+      // Captured rather than asserted inside the `catch`: with the expectations in the
+      // catch block, a row that stopped throwing would run no assertion and pass.
+      let thrown: unknown = 'nothing was thrown';
       try {
         fromWire(body);
       } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message.startsWith(WIRE_ERROR_PREFIX)).toBe(true);
+        thrown = error;
       }
+      expect(thrown, what).toBeInstanceOf(Error);
+      expect((thrown as Error).message.startsWith(WIRE_ERROR_PREFIX), what).toBe(true);
     }
   });
 
