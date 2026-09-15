@@ -329,32 +329,48 @@ describe('the shipped token file, exactly as it stands', () => {
   const report = audit();
 
   /**
-   * TWO KNOWN FAILURES, and AD-28 calls this kind of red the gate working rather than
-   * the gate broken: the palette is genuinely below a floor DESIGN.md itself sets.
+   * GREEN, and it was not green when it was written.
    *
-   * `pastille-network-1` and `pastille-network-3` measure 4.45:1 and 4.39:1 on
-   * `body-mid` in the dark palette, against the 4.5:1 floor DESIGN.md's own *Network
-   * pastille on body* row declares — a row that prints its measured range as **4.4 –
-   * 5.2** and never reconciles the low end with the floor above it. It is not the
-   * NFR-13 defect and it is not the zone-tint substitution; it predates both, and
-   * `palette-cvd-analysis.md` did not sweep this family when it declared the exemption
-   * set complete.
+   * `pastille-network-1` and `-3` measured 4.45:1 and 4.39:1 on `body-mid` in dark,
+   * against the 4.5:1 floor DESIGN.md's own *Network pastille on body* row declares —
+   * a row that printed its measured range as **4.4 – 5.2** and never reconciled the low
+   * end with the floor above it. That was not the NFR-13 defect and not the zone-tint
+   * substitution; it predated both, and `palette-cvd-analysis.md` had not swept this
+   * family when it declared the exemption set complete.
    *
-   * Nothing in this story may repair it: the values belong to design, and the story's
-   * Boundaries forbid inventing a replacement, relaxing a floor, or adding an exemption
-   * design has not ratified. So the gate reports it and this test pins the exact shape
-   * of the red. When design rules — by moving two hexes or by ratifying an exemption —
-   * this test goes red and is deleted, which is the point of writing it this way.
+   * Design ruled while this story was in review: §6 applies the zone rotation across
+   * **36 tokens**, not the 12 the analysis proposed, because the tint, the isoline and
+   * the network pastille of one network must carry the same hue or FR-65's identity
+   * channel breaks between reading levels. The whole family moved, and the two low
+   * readings moved with it.
+   *
+   * The assertion below is inverted rather than deleted. The pair that was under its
+   * floor is named explicitly, so a revert of design's rotation cannot quietly restore
+   * a sub-floor value under a green suite.
    */
-  it('is red on exactly the two network pastilles, and on nothing else', () => {
-    const failed = failures(report) as {
-      foreground?: string;
-      background?: string;
+  it('is green, with the two formerly sub-floor pastilles now clear of their floor', () => {
+    expect(failures(report)).toEqual([]);
+
+    const ratios = report.ratios as {
+      rule: string;
       palette: string;
+      foreground: string;
+      background: string;
+      ratio: number;
+      floor: number;
     }[];
-    expect(
-      failed.map((finding) => `${finding.palette}:${finding.foreground}/${finding.background}`),
-    ).toEqual(['dark:pastille-network-1/body-mid', 'dark:pastille-network-3/body-mid']);
+    const named = ratios.filter(
+      (pair) =>
+        pair.palette === 'dark' &&
+        pair.background === 'body-mid' &&
+        (pair.foreground === 'pastille-network-1' || pair.foreground === 'pastille-network-3'),
+    );
+    expect(named).toHaveLength(2);
+    for (const pair of named) {
+      expect(pair.rule).toBe('chassis');
+      expect(pair.floor).toBe(4.5);
+      expect(pair.ratio).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('clears NFR-13 in both palettes under both deficiencies', () => {

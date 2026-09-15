@@ -259,3 +259,65 @@ export const separation = {
   why: 'NFR-13 requires the six zone hues to be mutually separable under simulated deuteranopia in BOTH palettes. On the superseded tints, light 1 and 3 simulated to a byte-identical `#E2E2EC` and the dark palette had three pairs below ΔE00 1.6.',
   source: 'palette-cvd-analysis.md §4, ratified 2026-09-15',
 } as const;
+
+/**
+ * The chart register, as data — design's explicit ask in `palette-cvd-analysis.md` §6.
+ *
+ * **The contrast floors do not constrain saturation.** Design's first re-derivation of
+ * the zone rotation met every single floor in this file with values like `#FF3C00` and
+ * `#D500FF` — fully saturated neon. What actually holds Portolan's register is a chroma
+ * and lightness band that existed nowhere until that run: it was only ever implied by
+ * the shipped values.
+ *
+ * It lives here rather than in a comment because a comment does not fail a build. A
+ * re-derivation that ignores these bands passes every gate above and destroys the brand,
+ * which is precisely what happened once.
+ *
+ * Deliberately NOT part of the AD-28 gate: AD-28 names five contrast ratios and this is
+ * not one of them, and widening a blocking gate past its contract is how gates get
+ * disabled. It is asserted in `colour.test.ts` instead, which runs in the same CI job as
+ * every other unit test — so a neon re-derivation goes red without the merge gate
+ * growing a sixth dimension it was never given.
+ */
+export const register = {
+  source: 'DESIGN.md colors block, applied 2026-09-15; palette-cvd-analysis.md §6',
+  why: 'the floors are all satisfiable by fully saturated neon; the band is what makes the chart a chart',
+  bands: [
+    { family: 'zone tint', tokens: ZONE_TINTS, chroma: [4, 12] },
+    {
+      family: 'zone isoline',
+      tokens: [
+        'zone-isoline-1',
+        'zone-isoline-2',
+        'zone-isoline-3',
+        'zone-isoline-4',
+        'zone-isoline-5',
+        'zone-isoline-6',
+      ],
+      chroma: [17, 40],
+      lightness: [41, 49],
+    },
+    {
+      family: 'network pastille',
+      tokens: [
+        'pastille-network-1',
+        'pastille-network-2',
+        'pastille-network-3',
+        'pastille-network-4',
+        'pastille-network-5',
+        'pastille-network-6',
+      ],
+      chroma: [18, 35],
+      lightness: [44, 56],
+    },
+  ],
+} as const satisfies {
+  readonly source: string;
+  readonly why: string;
+  readonly bands: readonly {
+    readonly family: string;
+    readonly tokens: readonly ColourToken[];
+    readonly chroma: readonly [number, number];
+    readonly lightness?: readonly [number, number];
+  }[];
+};

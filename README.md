@@ -155,20 +155,40 @@ the convention disappears. `packages/tokens/src/colour.test.ts` asserts the full
 71 pairs against an independently transcribed list of `DESIGN.md`'s names, so a dropped
 or invented token fails rather than passing quietly.
 
-**Three named departures from `DESIGN.md`**, each annotated in the file it lives in:
+**The colour namespace is a pure transcription.** All 142 values are `DESIGN.md`'s own,
+and the test reads its `colors:` frontmatter and compares every one of them digit for
+digit, with no exception list.
 
-1. **The twelve zone tints** come from `palette-cvd-analysis.md` §5's re-optimised
-   register, not from `DESIGN.md`'s shipped values. Those are the NFR-13 defect — light
-   tints 1 and 3 simulate to a byte-identical `#E2E2EC` under deuteranopia. The
-   replacement holds the same 1.13–1.19 iso-luminant band and the same C\* ≤ 12 register,
-   so every edge floor survives; separation goes from 0.00 to 3.81 in light and 1.30 to
-   3.38 in dark.
-2. **`shape.bubble.silhouette.seed`** is AD-5's identity key, not the Docker ID
+It did not start that way. The zone rotation was a live NFR-13 defect while this work was
+being written — light tints 1 and 3 simulated to a byte-identical `#E2E2EC` under
+deuteranopia. Design settled it mid-flight and applied the rotation across **36 tokens**,
+not the 12 first proposed: the zone tint, the isoline and the network pastille of one
+network must carry the same hue, or FR-65's identity channel breaks between reading
+levels. Known consequence design records: every network changes colour, so any existing
+screenshot or mock is stale.
+
+**Two named departures remain**, neither of them a colour, each annotated in the file it
+lives in:
+
+1. **`shape.bubble.silhouette.seed`** is AD-5's identity key, not the Docker ID
    `DESIGN.md` and FR-13 both name. AD-6 is the declared departure: a container ID makes
    _the same shape across every survey_ false from the first redeployment onward.
-3. **`density.scale.affects`** drops `spacing.cell-clearance`. AD-8 overrode it because
+2. **`density.scale.affects`** drops `spacing.cell-clearance`. AD-8 overrode it because
    density driving clearance makes the density control a fourth relayout action, against
    FR-16.
+
+#### The contrast floors do not constrain saturation
+
+`floors.ts` also carries the **chart register** as data: chroma and lightness bands per
+colour family — tints at C\* 4–12, isolines at C\* 17–40 and L\* 41–49, network pastilles
+at C\* 18–35 and L\* 44–56.
+
+It is there because design's first re-derivation of the zone rotation met **every** floor
+above with values like `#FF3C00` and `#D500FF` — fully saturated neon. What holds the
+chart register is a band that existed nowhere until that run; it was only ever implied by
+the shipped values. A comment does not fail a build, so it is data here and asserted in
+`packages/tokens/src/colour.test.ts` — deliberately in the unit tests rather than inside
+the AD-28 gate, because AD-28 names five contrast ratios and this is not one of them.
 
 #### The CSS is generated, never hand-edited
 
@@ -232,13 +252,14 @@ AGPLv3 filter's surface to compute a ratio. `test/colour.test.ts` drives the por
 `palette-cvd-analysis.md`'s published figures rather than against its own output: if the
 port disagrees with the document, the gate is measuring something else.
 
-**The gate currently fails, and AD-28 calls this kind of red the gate working.**
-`pastille-network-1` and `pastille-network-3` measure 4.45:1 and 4.39:1 on `body-mid` in
-the dark palette, against the 4.5:1 floor `DESIGN.md`'s own _Network pastille on body_
-row declares — a row that prints its measured range as **4.4 – 5.2** and never
-reconciles the low end with the floor above it. It is a real miss, it predates this
-story, and nothing here may repair it: the values belong to design. See
-`_bmad-output/implementation-artifacts/deferred-work.md`.
+**The gate is green, and it was not green when it was written.**
+`pastille-network-1` and `-3` measured 4.45:1 and 4.39:1 on `body-mid` in dark, against
+the 4.5:1 floor `DESIGN.md`'s own _Network pastille on body_ row declares — a row that
+printed its measured range as **4.4 – 5.2** and never reconciled the low end with the
+floor above it. The gate reported it rather than guessing a repair, because the values
+belong to design; design's 36-token rotation moved the whole family and the two low
+readings with it. `test/contrast.test.ts` names that pair explicitly, so a revert cannot
+quietly restore a sub-floor value under a green suite.
 
 ### AGPLv3 compatibility is a gate, not an audit
 

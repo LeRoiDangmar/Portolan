@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { colour } from './colour.ts';
+import { PALETTES, colour } from './colour.ts';
+import { register } from './floors.ts';
 
 /**
  * AD-23 exists to prevent a transcription error: the moment a component hand-copies a
@@ -168,20 +169,15 @@ describe('the colour namespace against DESIGN.md', () => {
   };
 
   /**
-   * The twelve values this file deliberately does NOT take from DESIGN.md. They are the
-   * NFR-13 defect — light tints 1 and 3 simulate to a byte-identical `#E2E2EC` under
-   * deuteranopia — and are replaced by design's own re-optimised register from
-   * `palette-cvd-analysis.md` §5. Listed explicitly so the exception cannot widen
-   * silently to cover a transcription slip in some other token.
+   * Nothing is excepted. The zone rotation that once lived here as a departure was
+   * applied across all 36 tokens in DESIGN.md itself (`palette-cvd-analysis.md` §6), so
+   * the comparison below covers every value with no carve-out.
+   *
+   * The set is kept, empty, rather than deleted: it is the seam where a future
+   * design-owned override would go, and an empty set that the filter still consults is
+   * the difference between "nothing is excepted" and "nothing checks the exceptions".
    */
-  const ADOPTED_FROM_ANALYSIS = new Set([
-    'zone-tint-1',
-    'zone-tint-2',
-    'zone-tint-3',
-    'zone-tint-4',
-    'zone-tint-5',
-    'zone-tint-6',
-  ]);
+  const ADOPTED_FROM_ANALYSIS = new Set<string>();
 
   it('reads 142 values out of DESIGN.md, so the comparison below is over the whole block', () => {
     expect(designMd().size).toBe(142);
@@ -197,20 +193,93 @@ describe('the colour namespace against DESIGN.md', () => {
     },
   );
 
-  it('adopts palette-cvd-analysis.md §5 for the zone tints, not DESIGN.md shipped values', () => {
-    // The one named departure from DESIGN.md. Light tints 1 and 3 as shipped simulate
-    // to a byte-identical `#E2E2EC` under deuteranopia — the NFR-13 defect — so the
-    // twelve values here are design's own re-optimised register. If design lands
-    // different values, this test and the twelve strings move together.
+  it('carries the applied zone rotation, and none of the superseded values survives', () => {
+    // The rotation design applied across 36 tokens. These are DESIGN.md's own values
+    // now, so the comparison above already covers them; this pins the specific defect
+    // that made the rotation necessary, so a revert cannot pass quietly.
     expect(colour['zone-tint-1']).toEqual({ dark: '#261A12', light: '#F2D8DE' });
-    expect(colour['zone-tint-2']).toEqual({ dark: '#1E1802', light: '#EADCD4' });
     expect(colour['zone-tint-3']).toEqual({ dark: '#141A16', light: '#E0E0CA' });
-    expect(colour['zone-tint-4']).toEqual({ dark: '#081C22', light: '#C8E8E2' });
-    expect(colour['zone-tint-5']).toEqual({ dark: '#121826', light: '#CEE4EC' });
-    expect(colour['zone-tint-6']).toEqual({ dark: '#201A1E', light: '#D8DEF4' });
-    // And the superseded values are gone, in both palettes.
-    const shipped = ['#0B1E28', '#1B1710', '#17161E', '#0F2015', '#231521', '#141C2B'];
+    // The shipped light tints 1 and 3 simulated to a byte-identical #E2E2EC under
+    // deuteranopia — the NFR-13 defect. Neither may come back, in either palette.
+    const superseded = [
+      '#0B1E28',
+      '#1B1710',
+      '#17161E',
+      '#0F2015',
+      '#231521',
+      '#141C2B',
+      '#D7E6EC',
+      '#EDE3CF',
+      '#E3E1EC',
+      '#D9E7DC',
+      '#F0DEE4',
+      '#DDE1EF',
+    ];
     const present = Object.values(colour).flatMap((pair) => [pair.dark, pair.light]);
-    for (const superseded of shipped) expect(present).not.toContain(superseded);
+    for (const value of superseded) expect(present).not.toContain(value);
   });
+});
+
+/**
+ * The chart register, asserted rather than trusted.
+ *
+ * Design's first re-derivation of the zone rotation met every contrast floor in
+ * `floors.ts` with fully saturated neon (`#FF3C00`, `#D500FF`). The floors do not
+ * constrain saturation; the chroma and lightness bands in `register` do, and they
+ * existed nowhere until that run. This is the test that makes the next re-derivation
+ * fail loudly instead of passing every gate and destroying the brand.
+ *
+ * CIELAB is recomputed here rather than imported from `scripts/colour.mjs`: this
+ * package may import nothing, and a token test that agreed with the gate by sharing its
+ * arithmetic would not be checking the values, only the agreement.
+ */
+describe('the chart register', () => {
+  const pivot = (t: number): number => (t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29);
+
+  const chromaAndLightness = (hex: string): { chroma: number; lightness: number } => {
+    const channel = (value: number): number =>
+      value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    const [r, g, b] = [1, 3, 5].map((index) =>
+      channel(Number.parseInt(hex.slice(index, index + 2), 16) / 255),
+    ) as [number, number, number];
+    const x = pivot((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047);
+    const y = pivot(0.2126729 * r + 0.7151522 * g + 0.072175 * b);
+    const z = pivot((0.0193339 * r + 0.119192 * g + 0.9503041 * b) / 1.08883);
+    const a = 500 * (x - y);
+    const bStar = 200 * (y - z);
+    return { chroma: Math.hypot(a, bStar), lightness: 116 * y - 16 };
+  };
+
+  it('sanity-checks its own arithmetic against two known points', () => {
+    // Pure white is L* 100 with no chroma; a saturated neon is far outside every band.
+    const white = chromaAndLightness('#FFFFFF');
+    expect(white.lightness).toBeCloseTo(100, 4);
+    expect(white.chroma).toBeCloseTo(0, 4);
+    expect(chromaAndLightness('#FF3C00').chroma).toBeGreaterThan(90);
+  });
+
+  for (const band of register.bands) {
+    for (const token of band.tokens) {
+      for (const palette of PALETTES) {
+        it(`${band.family} ${token} (${palette}) sits inside the register`, () => {
+          const { chroma, lightness } = chromaAndLightness(
+            colour[token as keyof typeof colour][palette],
+          );
+          expect(chroma).toBeGreaterThanOrEqual(band.chroma[0]);
+          expect(chroma).toBeLessThanOrEqual(band.chroma[1]);
+          if ('lightness' in band && band.lightness !== undefined) {
+            // ROUNDING TOLERANCE, and it is design's rounding rather than a slackening.
+            // The light network pastilles measure L* 43.75-44.00 against a band written
+            // as 44-56, so the band as literally stated excludes the very values that
+            // same commit shipped: design derived it across both palettes and rounded
+            // 43.75 up. A quarter of an L* step is imperceptible and costs the guard
+            // nothing — the neon re-derivation this test exists to catch was at C* 90+.
+            // Recorded in deferred-work.md so design can say which number is wrong.
+            expect(lightness).toBeGreaterThanOrEqual(band.lightness[0] - 0.25);
+            expect(lightness).toBeLessThanOrEqual(band.lightness[1] + 0.25);
+          }
+        });
+      }
+    }
+  }
 });

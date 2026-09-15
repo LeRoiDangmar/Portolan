@@ -9,29 +9,28 @@
 // AD-23 moved normativity on values from DESIGN.md to this file. DESIGN.md documents
 // the intent; this is what the product is measured against.
 //
-// THREE DEPARTURES FROM DESIGN.md ACROSS THE TOKEN FILE, each named where it lives:
-//   1. the twelve zone tints below, per `palette-cvd-analysis.md` §5 (NFR-13);
-//   2. `shape.bubble.silhouette.seed`, which follows AD-6's identity key rather than
-//      DESIGN.md's and FR-13's Docker ID;
-//   3. `density.scale.affects`, which drops `spacing.cell-clearance` per AD-8.
-// The first is this file's; the other two are annotated in place in their own files.
+// THIS FILE IS A PURE TRANSCRIPTION. Every one of the 142 values is DESIGN.md's own,
+// and `colour.test.ts` reads DESIGN.md's `colors:` frontmatter and compares all of them
+// digit for digit, with no exception list.
 //
-// THIS FILE'S DEPARTURE, and it is the story's named decision:
-// `zone-tint-1…6` and their light twins are NOT DESIGN.md's shipped values. Those are
-// the NFR-13 defect — light tints 1 and 3 simulate to a byte-identical `#E2E2EC` under
-// deuteranopia, and the dark palette has three pairs below ΔE00 1.6, which no upstream
-// document reported. The twelve values below are design's own re-optimised register
-// from `palette-cvd-analysis.md` §5, measured by the same script the defect was found
-// with. They hold the 1.13–1.19 iso-luminant band and C* ≤ 12, so the edge floors and
-// the register both survive; min pairwise ΔE00 goes to 3.38 dark / 3.81 light.
-// `palette-cvd-analysis.md` calls them candidates pending design's ratification of the
-// register: if design lands different values, the change is twelve hex strings here and
-// the gate re-runs.
+// It did not start that way. The zone rotation was a live NFR-13 defect while this story
+// was being written — light tints 1 and 3 simulated to a byte-identical `#E2E2EC` under
+// deuteranopia, and the dark palette carried three pairs below ΔE00 1.6, which no
+// upstream document reported. Design settled it mid-flight: `palette-cvd-analysis.md` §6
+// records the rotation applied across **36 tokens**, not the 12 the analysis first
+// proposed — the zone tint, the isoline and the network pastille of a given network now
+// carry the same hue, 0–2° apart, because changing the tints alone would have broken
+// FR-65, where hue is what holds a network's identity from its field to its badge.
+// Separation is 3.38/3.39 dark and 3.81/3.74 light under deuteranopia/protanopia.
 //
-// Not re-derived, and deferred with a named owner: `zone-isoline-1…6`, the mode-B zone
-// blob and `pastille-network-*` were all derived against the superseded tints. None is
-// among AD-28's five gated ratios, so nothing in CI catches the drift — see
-// `_bmad-output/implementation-artifacts/deferred-work.md`.
+// TWO DEPARTURES REMAIN IN THE TOKEN FILE, neither of them a colour, each annotated in
+// place in its own file:
+//   1. `shape.bubble.silhouette.seed` follows AD-6's identity key rather than DESIGN.md's
+//      and FR-13's Docker ID;
+//   2. `density.scale.affects` drops `spacing.cell-clearance` per AD-8.
+//
+// Known consequence of the rotation, recorded by design: every network changes colour —
+// only network 2 stays near its shipped hue — so any existing screenshot or mock is stale.
 
 /** A token that exists in both palettes. Dark is the default and the design target. */
 export interface Palette {
@@ -102,12 +101,12 @@ export const colour = {
   'zone-tint-4': { dark: '#081C22', light: '#C8E8E2' },
   'zone-tint-5': { dark: '#121826', light: '#CEE4EC' },
   'zone-tint-6': { dark: '#201A1E', light: '#D8DEF4' },
-  'zone-isoline-1': { dark: '#3F7286', light: '#4C7E8E' },
-  'zone-isoline-2': { dark: '#836B3B', light: '#8A6E2C' },
-  'zone-isoline-3': { dark: '#6C6885', light: '#625E7C' },
-  'zone-isoline-4': { dark: '#437E59', light: '#42805A' },
-  'zone-isoline-5': { dark: '#8F6079', light: '#9C5C7C' },
-  'zone-isoline-6': { dark: '#61759A', light: '#5A6EA0' },
+  'zone-isoline-1': { dark: '#9A6846', light: '#AC5670' },
+  'zone-isoline-2': { dark: '#7A7054', light: '#96684A' },
+  'zone-isoline-3': { dark: '#447C5A', light: '#72763E' },
+  'zone-isoline-4': { dark: '#367A8E', light: '#0E8276' },
+  'zone-isoline-5': { dark: '#5870A4', light: '#367C90' },
+  'zone-isoline-6': { dark: '#986288', light: '#667294' },
 
   // --- Edges — the product ---------------------------------------------------
   'edge-attach': { dark: '#5B8494', light: '#4A6A78' },
@@ -128,12 +127,12 @@ export const colour = {
   'pastille-stack-5': { dark: '#9A94C0', light: '#5A559A' },
   'pastille-stack-6': { dark: '#8FB073', light: '#4F7434' },
   'pastille-stack-none': { dark: '#78848D', light: '#5F6E78' },
-  'pastille-network-1': { dark: '#4A8296', light: '#3D6C7E' },
-  'pastille-network-2': { dark: '#967C46', light: '#7A6430' },
-  'pastille-network-3': { dark: '#7A7695', light: '#55506E' },
-  'pastille-network-4': { dark: '#4E9268', light: '#356B4A' },
-  'pastille-network-5': { dark: '#A46F8B', light: '#864C68' },
-  'pastille-network-6': { dark: '#7286B0', light: '#4A5D8B' },
+  'pastille-network-1': { dark: '#B07A56', light: '#965468' },
+  'pastille-network-2': { dark: '#948450', light: '#8A5E42' },
+  'pastille-network-3': { dark: '#6C8E78', light: '#686A44' },
+  'pastille-network-4': { dark: '#568EA0', light: '#20746A' },
+  'pastille-network-5': { dark: '#6E86BA', light: '#307082' },
+  'pastille-network-6': { dark: '#AA769A', light: '#4C689C' },
   'pastille-health-nominal': { dark: '#4C9BD6', light: '#1F6FA8' },
   'pastille-health-degraded': { dark: '#C08A3C', light: '#9A6410' },
   'pastille-health-stopped': { dark: '#BF5747', light: '#A63B2B' },

@@ -35,7 +35,7 @@ export { stroke } from './stroke.ts';
 export { type } from './type.ts';
 
 export type { TokenPair, FloorRule, ExemptionMeasure } from './floors.ts';
-export { gatedFloors, exemptions, separation } from './floors.ts';
+export { gatedFloors, exemptions, separation, register } from './floors.ts';
 
 import { colour } from './colour.ts';
 import { density } from './density.ts';

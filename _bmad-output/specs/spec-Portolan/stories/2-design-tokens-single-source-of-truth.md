@@ -280,6 +280,40 @@ opposite sides of a floor. The list is empty, and the mechanism stays so that it
 `stroke.edge.attach-min-length` are the two values the measurement harness is required to read from
 here rather than carry. They are in place; the ratchet that consumes them is not this story.
 
+**Design ruled mid-review, and the story got simpler.** While this was in review, design
+merged the zone rotation to `main` (PR #9) — applied across **36 tokens**, not the 12
+`palette-cvd-analysis.md` §5 proposed, because tint, isoline and network pastille of one
+network must share a hue or FR-65's identity channel breaks between reading levels. After
+merging `main` and re-transcribing, three things changed:
+
+- **The colour namespace is now a pure transcription.** The twelve tints this story
+  adopted ahead of ratification are `DESIGN.md`'s own values; the exception list in
+  `colour.test.ts` is empty and all 142 values compare digit for digit. The frozen block's
+  zone-tint decision was right and is now moot.
+- **The AD-28 gate is green.** The two `pastille-network` readings that blocked it moved
+  with their family: 4.39:1 → 5.22:1 dark. The test that pinned the red is inverted rather
+  than deleted, naming that pair, so a revert cannot restore a sub-floor value quietly.
+- **Three of the four deferrals are discharged** — the isolines, the zone blob and the
+  permanently-red required check. Re-measured after the merge: isolines 3.20–3.68:1,
+  blob 4.65–4.88:1 (was 3.97), pastilles 5.13–5.62:1.
+
+**One thing design asked for that this story now carries.** §6 records that the first
+re-derivation met *every* contrast floor with fully saturated neon (`#FF3C00`, `#D500FF`):
+the floors do not constrain saturation, and what holds the register is a chroma and
+lightness band that existed nowhere until that run. Design asked for it in the AD-23 token
+file **as data**. It is `register` in `floors.ts`, asserted in `colour.test.ts` rather than
+inside the AD-28 gate — AD-28 names five contrast ratios and this is not one of them, so
+the merge gate does not grow a sixth dimension it was never given.
+
+Measuring it surfaced one discrepancy, deferred rather than smoothed: the stated
+`L* 44–56` band for network pastilles excludes the light half of the set design shipped in
+the same commit, which measures 43.75–44.00. The assertion carries an explicit 0.25
+rounding tolerance with the reason above it.
+
+**Final verification:** 369 tests across 7 files, `typecheck`, `lint`, `build`, `licences`
+and `tokens:css --check` all clean, and `npm run contrast` exits 0 — 120 gated pairs, 8
+exempted pairs and 4 separation measurements, all at or above their floor.
+
 ## Spec Change Log
 
 ## Review Triage Log
