@@ -117,6 +117,13 @@ jobs:
   determinism:
     # AD-32: layout determinism is the one property that must hold on both
     # architectures, because AD-8's arithmetic guarantee is what the map rests on.
+    #
+    # `test:determinism` is a filename filter on `determinism`, and two suites answer to
+    # it: `packages/layout/src/layout.determinism.test.ts` (AD-8, all three modes, with
+    # committed golden digests) and `packages/model/src/silhouette.determinism.test.ts`
+    # (AD-6, the seed layout reserves against). Stability is a second property and lives
+    # in `layout.stability.test.ts`, which the unit job runs — a determinism test never
+    # changes its input, so it cannot see stability (AD-37).
     name: determinism (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -130,16 +137,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
-      - name: Report whether determinism tests exist yet
-        run: |
-          # The same tree Vitest's `include` covers — packages/, harness/ and test/ —
-          # so a determinism suite cannot run while this step still calls it absent.
-          count=$(find packages harness test -name '*determinism*.test.ts' | wc -l)
-          if [ "$count" -eq 0 ]; then
-            echo "::warning title=No determinism tests yet::The AD-8 determinism suite lands with the layout package. This job runs the matrix and asserts nothing until then."
-          else
-            echo "Found $count determinism test file(s)."
-          fi
       - run: npm run test:determinism
 
   pending:
