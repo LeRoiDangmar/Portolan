@@ -120,9 +120,11 @@ export const relax = (
       shiftY[link.to] = (shiftY[link.to] ?? 0) - dy * share;
     }
 
-    // The hulls push. Pairwise, which is 78 210 pairs at the reference scale of 396 objects
-    // — a cost worth naming and worth paying, because a spatial index would be a second
-    // structure with an order of its own and AD-7 would have to reach into it.
+    // The hulls push. Pairwise over the BODIES — not over the survey: AD-29's reference
+    // cluster is 396 objects, of which 365 are bodies (40 services, 300 containers, 25
+    // volumes; nodes, networks and stacks take no cell), so 66 430 pairs. A cost worth
+    // naming and worth paying, because a spatial index would be a second structure with an
+    // order of its own and AD-7 would have to reach into it.
     for (let i = 0; i < bodies.length; i += 1) {
       for (let j = i + 1; j < bodies.length; j += 1) {
         const a = at(positions, i);

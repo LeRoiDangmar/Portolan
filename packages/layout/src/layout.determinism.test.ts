@@ -289,7 +289,8 @@ describe('layout is a pure, deterministic function of its four arguments (AD-8)'
   });
 
   it('would report a drift, so the digests above are evidence and not decoration', () => {
-    // A perturbed input must not match: one more replica of `web`, everything else equal.
+    // A perturbed input must not match: the first container dropped from the survey, and
+    // with it the first edge, which is a different cluster by one body.
     const perturbed: Survey = {
       ...FIXTURE,
       containers: FIXTURE.containers.slice(1),

@@ -62,11 +62,11 @@ export { ANCHOR_PULL, EDGE_PULL, HULL_PUSH, RELAX_PASSES, relax } from './relax.
 export { carryForward, diff, placedKeys } from './retain.ts';
 export { emptySpace, isDisjoint, overlaps, reserve, settle } from './space.ts';
 
-import type { Survey } from '@portolan/model';
+import type { IdentityKey, Survey } from '@portolan/model';
 import { sortSurvey } from '@portolan/model';
 
 import type { Mode, Placement, Positions } from './arrange.ts';
-import { arrange, sortPlacements } from './arrange.ts';
+import { arrange } from './arrange.ts';
 import { indexSurvey } from './anchors.ts';
 import { countInvocation } from './invocations.ts';
 import { carryForward } from './retain.ts';
@@ -94,25 +94,30 @@ export const sameMode = (a: Mode, b: Mode): boolean =>
  * lookup, which is the case FR-56's frozen panel exists for. Answering nothing is the honest
  * answer to *where is it*; throwing would make a race in the chassis into an exception.
  */
-export const placementsOf = (positions: Positions, key: string): readonly Placement[] =>
+export const placementsOf = (positions: Positions, key: IdentityKey): readonly Placement[] =>
   positions.placements.filter((placement) => placement.key === key);
 
 /** The retained cell of a key, if it has one — a vanished object still holds its ground. */
-export const retainedOf = (positions: Positions, key: string): readonly Placement[] =>
+export const retainedOf = (positions: Positions, key: IdentityKey): readonly Placement[] =>
   positions.retained.filter((placement) => placement.key === key);
 
 /**
  * Lay out one survey. The whole of AD-8, as one function.
  *
  * IT DECIDES BETWEEN TWO PATHS AND NOTHING ELSE DOES.
- *   - The ARRANGEMENT path runs when there are no previous positions, or when the seed or
- *     the mode differ from the ones those positions were built under. Those are exactly
- *     FR-16's three actions: Reorganise clears the previous positions, and a change of zone
- *     mode or of the node backdrop changes `mode`. It anchors, seeds and relaxes the whole
- *     population, and it does not carry the retained cells — that is AD-37's single release
- *     point, and it is a line that is not here rather than a line that is.
- *   - The SURVEY path runs otherwise. Survivors are untouched, arrivals are placed near
- *     their neighbours in space left free, and departures' cells are retained.
+ *   - The ARRANGEMENT path runs when the previous positions hold NEITHER a placement NOR a
+ *     retained cell, or when the seed or the mode differ from the ones they were built
+ *     under. Those are exactly FR-16's three actions: Reorganise clears the previous
+ *     positions, and a change of zone mode or of the node backdrop changes `mode`. It
+ *     anchors, seeds and relaxes the whole population, and it does not carry the retained
+ *     cells — that is AD-37's single release point, and it is a line that is not here
+ *     rather than a line that is.
+ *   - The SURVEY path runs otherwise, INCLUDING when the last survey placed nothing but
+ *     still holds retained cells. A cluster that empties and refills would otherwise
+ *     release every cell on the survey after it emptied, which is a release outside the one
+ *     point AD-37 allows.
+ *   - The SURVEY path leaves survivors untouched, places arrivals near their neighbours in
+ *     space left free, and retains departures' cells.
  *
  * The survey is sorted by AD-7's comparator on the way in. A model's collections are NOT
  * sorted by construction — only `sortSurvey` and `fromWire` sort — so two payloads that
@@ -130,12 +135,13 @@ export const layout = (
 
   const carried =
     previousPositions !== undefined &&
-    previousPositions.placements.length > 0 &&
+    (previousPositions.placements.length > 0 || previousPositions.retained.length > 0) &&
     previousPositions.seed === seed &&
     sameMode(previousPositions.mode, mode);
 
   if (carried && previousPositions !== undefined) {
     return carryForward(previousPositions, index, seed, mode);
   }
-  return { placements: sortPlacements(arrange(index, seed, mode)), retained: [], seed, mode };
+  // `arrange` returns its placements already in AD-7 order.
+  return { placements: arrange(index, seed, mode), retained: [], seed, mode };
 };

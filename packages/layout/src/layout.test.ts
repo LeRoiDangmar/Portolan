@@ -22,6 +22,7 @@ import {
   layout,
   layoutInvocations,
   placementsOf,
+  relax,
   resetInvocations,
   retainedOf,
 } from './index.ts';
@@ -182,10 +183,12 @@ export const REFERENCE: ClusterSpec = {
   ],
 };
 
+/** Every inhabitant of `Mode`, so no combination is left unexercised. */
 export const MODES: readonly (readonly [string, Mode])[] = [
   ['blended zones', { zoneMode: 'blended', nodeBackdrop: false }],
   ['disjoint zones', { zoneMode: 'disjoint', nodeBackdrop: false }],
   ['node backdrop', { zoneMode: 'blended', nodeBackdrop: true }],
+  ['disjoint zones under the node backdrop', { zoneMode: 'disjoint', nodeBackdrop: true }],
 ];
 
 const SEED = 20260916;
@@ -268,10 +271,13 @@ describe('the layout places what the survey holds', () => {
   });
 
   it('answers nothing for a key the survey does not contain, and does not throw', () => {
+    // A WELL-FORMED key the survey does not contain — picking sends identity keys upward
+    // (AD-36), so the case is a subject that vanished between the click and the lookup,
+    // never a malformed string.
     const positions = layout(cluster(REFERENCE), undefined, SEED, DEFAULT_MODE);
-    expect(placementsOf(positions, 'volume:absent')).toEqual([]);
-    expect(placementsOf(positions, 'nonsense')).toEqual([]);
-    expect(retainedOf(positions, 'volume:absent')).toEqual([]);
+    expect(placementsOf(positions, volumeKey('absent'))).toEqual([]);
+    expect(placementsOf(positions, replicatedTaskKey('blog', 'web', 99))).toEqual([]);
+    expect(retainedOf(positions, volumeKey('absent'))).toEqual([]);
   });
 });
 
@@ -462,12 +468,18 @@ const sourceFiles = readdirSync(SOURCES)
  * The file with its comments and string literals removed, so prose about `+32%` or about
  * `Math.cos` is not read as code. Crude by design — it only has to be right about this
  * package's own sources, and a parser would be a dependency.
+ *
+ * ALL THREE QUOTE STYLES, because the claim is *string literals*, not *the quote style the
+ * formatter happens to produce today*: a double-quoted `"Date"` added later would otherwise
+ * fail the ban with no banned construct present, and a check that fails on nothing is worse
+ * than no check.
  */
 const codeOf = (source: string): string =>
   source
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/(^|[^:])\/\/.*$/gm, '$1 ')
     .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
     .replace(/`(?:[^`\\]|\\.)*`/g, '``');
 
 describe('the stage’s arithmetic is `+ - * /` and `Math.sqrt` (AD-8)', () => {
@@ -510,5 +522,70 @@ describe('the stage’s arithmetic is `+ - * /` and `Math.sqrt` (AD-8)', () => {
     // And that a comment mentioning the banned thing does NOT fail, or the check would be
     // unusable in a package whose headers argue about `Math.cos` at length.
     expect(codeOf('// AD-8 bans Math.cos, deliberately.\nconst a = 1;')).not.toMatch(/Math/);
+    // Nor does a string literal naming one — in any of the three quote styles, because the
+    // claim is *string literals* and not *the style the formatter happens to produce today*.
+    for (const quoted of [
+      "const a = 'Math.cos % Date';",
+      'const a = "Math.cos % Date";',
+      'const a = `Math.cos % Date`;',
+    ]) {
+      const stripped = codeOf(quoted);
+      expect(stripped).not.toMatch(/Math/);
+      expect(stripped).not.toMatch(/\bDate\b/);
+      expect(stripped).not.toMatch(/[^%]%[^%]/);
+    }
+  });
+});
+
+describe('the relaxation is Jacobi, and that is what buys order-independence', () => {
+  it('resolves a permuted body list to the permuted answer', () => {
+    // Every pass computes the whole displacement field from the positions at the START of
+    // the pass, so no body ever sees another's half-updated position. Permuting the input
+    // and inverting the permutation on the output must therefore give the same arrangement:
+    // a Gauss-Seidel loop — one that applied each shift as it computed it — would not, and
+    // the golden digests would still pass because they never permute anything.
+    //
+    // To within floating-point summation, which is all Jacobi can buy: the order the
+    // contributions are ADDED in changes with the permutation, and it is AD-7's key order
+    // that fixes it for the byte-identity claim.
+    const anchors = [
+      { x: 0, y: 0 },
+      { x: 300, y: 0 },
+      { x: 0, y: 300 },
+      { x: 300, y: 300 },
+      { x: 150, y: 150 },
+    ];
+    const bodies = anchors.map((anchor, index) => ({
+      key: volumeKey(`v${index}`),
+      radius: 60 + index * 3,
+      anchor,
+    }));
+    const start = anchors.map((anchor, index) => ({
+      x: anchor.x + index * 7,
+      y: anchor.y - index,
+    }));
+    const links = [
+      { from: 0, to: 1 },
+      { from: 1, to: 4 },
+      { from: 2, to: 3 },
+      { from: 0, to: 4 },
+    ];
+    const straight = relax(bodies, links, start, 6);
+
+    const order = [3, 0, 4, 1, 2];
+    const slot = new Map(order.map((original, position) => [original, position]));
+    const permuted = relax(
+      order.map((original) => bodies[original] as (typeof bodies)[number]),
+      links.map((link) => ({ from: slot.get(link.from) ?? 0, to: slot.get(link.to) ?? 0 })),
+      order.map((original) => start[original] as (typeof start)[number]),
+      6,
+    );
+
+    order.forEach((original, position) => {
+      expect(permuted[position]?.x).toBeCloseTo(straight[original]?.x ?? NaN, 9);
+      expect(permuted[position]?.y).toBeCloseTo(straight[original]?.y ?? NaN, 9);
+    });
+    // And the relaxation actually did something, or the row above holds for a no-op.
+    expect(JSON.stringify(straight)).not.toBe(JSON.stringify(start));
   });
 });

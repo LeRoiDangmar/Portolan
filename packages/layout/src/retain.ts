@@ -66,6 +66,10 @@ export const diff = (previous: Positions, present: readonly IdentityKey[]): Diff
   };
 };
 
+/** Which drawing a placement is: the key, the zone it names, and original or echo. */
+const slotOf = (placement: Placement): string =>
+  `${placement.key}|${placement.zone ?? ''}|${placement.original}`;
+
 const groupBy = (placements: readonly Placement[]): Map<IdentityKey, Placement[]> => {
   const grouped = new Map<IdentityKey, Placement[]>();
   for (const placement of placements) {
@@ -113,7 +117,6 @@ export const carryForward = (
   const part = partitioning(index, mode);
   const networks = new Set(index.networks);
   const groups = new Set(part.groups);
-  const here = new Set(present);
 
   // Which bodies each group holds, so a NEW group can be anchored on its own members rather
   // than on the spiral slot the arrangement path would have given it. A zone that appears
@@ -128,27 +131,60 @@ export const carryForward = (
     }
   }
 
+  // Where each group was drawn last time. An anchor is PREFERRED over the one
+  // `partitioning` just recomputed, because `pitchFor` moves the whole spiral whenever a
+  // group's size changes while the committed anchors stay where they were — and an arrival
+  // seeded against the recomputed grid would be placed relative to a map that is no longer
+  // drawn. The recomputed anchor is the fallback for a group that has none yet.
+  const carriedAnchor = new Map<IdentityKey, Point>();
+  for (const placement of previous.placements) {
+    if (placement.radius === 0)
+      carriedAnchor.set(placement.key, { x: placement.x, y: placement.y });
+  }
+  const anchorAt = (group: IdentityKey | null): Point =>
+    (group === null ? undefined : carriedAnchor.get(group)) ?? anchorPoint(part.anchors, group);
+
   const space = emptySpace();
   const kept: Placement[] = [];
   const retained: Placement[] = [];
   /** The one original placement of every key committed so far — what a centroid reads. */
   const placed = new Map<IdentityKey, Placement>();
 
-  const commit = (placement: Placement): void => {
+  /** Record a drawing without reserving: for ground step 1 has already held. */
+  const record = (placement: Placement): void => {
     kept.push(placement);
-    reserve(space, { x: placement.x, y: placement.y, radius: placement.radius });
     if (placement.original) placed.set(placement.key, placement);
   };
 
-  // 1. The retained cells of everything that vanished earlier and has not come back. Held
-  //    first, so no arrival can be placed into one of them.
+  const commit = (placement: Placement): void => {
+    record(placement);
+    reserve(space, { x: placement.x, y: placement.y, radius: placement.radius });
+  };
+
+  // 1. Every retained cell, held first so no arrival can be placed into one.
+  //
+  //    RESERVED WHETHER OR NOT THE KEY HAS COME BACK. Skipping the reservation for a
+  //    returning key would let an earlier-ordered arrival settle onto ground that key is
+  //    about to be restored to, and two reserved hulls would intersect.
+  //
+  //    AND CARRIED FORWARD UNLESS SOMETHING BELOW TAKES IT BACK. A cell leaves this map only
+  //    when the drawing that left it is drawn again, in step 4 or step 5; whatever is still
+  //    in it at the end is still held. Releasing on presence instead would drop the retained
+  //    echo of a survivor whose network vanished — a release outside the one point AD-37
+  //    allows.
+  const held = new Map<string, Placement>();
   for (const key of [...retainedBefore.keys()].sort(compareIdentityKeys)) {
-    if (here.has(key)) continue;
     for (const cell of retainedBefore.get(key) ?? []) {
-      retained.push(cell);
       reserve(space, { x: cell.x, y: cell.y, radius: cell.radius });
+      held.set(slotOf(cell), cell);
     }
   }
+
+  /** Draw a held cell again, on its own ground. Already reserved, so it is only recorded. */
+  const restore = (cell: Placement): void => {
+    held.delete(slotOf(cell));
+    record(cell);
+  };
 
   // 2. Everything that departed this survey. Its cell joins them, unreclaimed.
   for (const key of departures) {
@@ -165,12 +201,11 @@ export const carryForward = (
   for (const key of present) {
     const previousPlacements = before.get(key);
     if (previousPlacements === undefined) continue;
-    let originalSeen = false;
-    const survivorEchoes: Placement[] = [];
     for (const placement of previousPlacements) {
       const zoneGone = placement.zone !== null && !networks.has(placement.zone);
       if (placement.original) {
-        originalSeen = true;
+        // The original always comes back, even when the network it named has gone: it
+        // simply stops naming one. Naming no zone is not moving.
         commit(zoneGone ? { ...placement, zone: null } : placement);
       } else if (zoneGone) {
         // An echo of a zone that no longer exists. Its cell is retained like any other
@@ -178,15 +213,8 @@ export const carryForward = (
         retained.push(placement);
         reserve(space, { x: placement.x, y: placement.y, radius: placement.radius });
       } else {
-        survivorEchoes.push(placement);
+        commit(placement);
       }
-    }
-    for (const placement of survivorEchoes) {
-      // Exactly one placement is the original. If the original's own drawing is the one
-      // that went, the lowest-keyed echo is relabelled rather than moved — FR-16 is about
-      // position, and a relabel moves nothing.
-      commit(originalSeen ? placement : { ...placement, original: true });
-      originalSeen = true;
     }
   }
 
@@ -197,21 +225,27 @@ export const carryForward = (
     const returning = retainedBefore.get(key);
 
     if (returning !== undefined) {
-      // It came back. Its own retained cell is exactly where it was, and nothing else was
-      // allowed into it, so it lands back where it left — which is what retaining it was for.
-      for (const cell of returning) commit(cell);
+      // It came back. Its cell was held all along — step 1 reserved it and let nothing in —
+      // so it lands back where it left, which is what retaining it was for. Already
+      // reserved, hence `record` rather than `commit`.
+      for (const cell of returning) {
+        const zoneGone = cell.zone !== null && !networks.has(cell.zone);
+        // An echo of a zone that has gone while the object was away stays held: the object
+        // comes back, this COPY of it does not.
+        if (!cell.original && zoneGone) continue;
+        held.delete(slotOf(cell));
+        record(cell.original && zoneGone ? { ...cell, zone: null } : cell);
+      }
       continue;
     }
 
     // The three rungs. A group is anchored on its members instead: it is not placed NEAR
     // them, it is placed AMONG them, and *siblings* means nothing to a network.
     const preferred = isGroup
-      ? (centroidOf(membersOf.get(key) ?? [], placed) ??
-        part.anchors.at.get(key) ??
-        part.anchors.orphan)
+      ? (centroidOf(membersOf.get(key) ?? [], placed) ?? anchorAt(key))
       : (centroidOf(relatedTo(index.siblings, key), placed) ??
         centroidOf(relatedTo(index.adjacent, key), placed) ??
-        anchorPoint(part.anchors, dominantOf(part.homesOf(key), part.sizeOf)));
+        anchorAt(dominantOf(part.homesOf(key), part.sizeOf)));
 
     // An anchor reserves nothing, so it is never settled: a zone field has no cell to keep
     // clear of, and pushing one out of a body would move the field off its own members.
@@ -234,7 +268,15 @@ export const carryForward = (
       const radius = radiusOf(key);
       for (const zone of relatedTo(index.zones, key)) {
         if (already.has(zone)) continue;
-        const anchor = anchorPoint(part.anchors, zone);
+        // If this copy was drawn here before and its zone went away, its cell was held and
+        // nothing was let into it — so it comes back onto its own ground, for the same
+        // reason a returning object does.
+        const heldEcho = held.get(`${key}|${zone}|false`);
+        if (heldEcho !== undefined) {
+          restore(heldEcho);
+          continue;
+        }
+        const anchor = anchorAt(zone);
         const offset = scatterOf(key, seed + seedOf(zone), part.anchors.spread);
         const point = settle(space, { x: anchor.x + offset.x, y: anchor.y + offset.y }, radius);
         commit({ key, x: point.x, y: point.y, radius, zone, original: false });
@@ -242,5 +284,11 @@ export const carryForward = (
     }
   }
 
-  return { placements: sortPlacements(kept), retained: sortPlacements(retained), seed, mode };
+  return {
+    placements: sortPlacements(kept),
+    // Whatever is still held, plus whatever this survey retired.
+    retained: sortPlacements([...held.values(), ...retained]),
+    seed,
+    mode,
+  };
 };

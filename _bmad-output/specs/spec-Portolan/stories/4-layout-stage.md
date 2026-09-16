@@ -2,7 +2,7 @@
 title: 'The layout stage'
 type: 'feature'
 created: '2026-09-16'
-status: 'in-progress'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: '04da61bcf51856282380968d64571390816cfa51'
@@ -301,9 +301,23 @@ Four things no planning document settles, decided by the human on 2026-09-16 and
 - **A returning object gets its own retained cell back.** Its cell was held and nothing was let
   into it, so restoring it there is free and is what retaining it was for.
 - **When an echo's zone vanishes its cell is retained; if the ORIGINAL's zone vanishes the
-  original stays put and stops naming a zone.** One placement is always the original, and if
-  the original's own drawing is the one that went, the lowest-keyed echo is relabelled rather
-  than moved — FR-16 is about position, and a relabel moves nothing.
+  original stays put and stops naming a zone.** Naming no zone is not moving, so FR-16 holds
+  without the original being re-placed, and the object keeps exactly one original. A first
+  draft also relabelled an echo when the original's drawing went; that branch was unreachable
+  — the original is always committed before the echoes — and it is not in the shipped code.
+- **A held cell leaves the retained set only when the drawing that left it is drawn again.**
+  Every retained cell is reserved on every survey, present key or not: skipping the
+  reservation for a returning key lets an earlier-ordered arrival settle onto the ground that
+  key is about to be restored to, and two reserved hulls intersect. Releasing on presence
+  instead drops the retained echo of a survivor whose network vanished, which is a release
+  outside AD-37's one point. Both were caught by the network-removal row in
+  `layout.stability.test.ts`, which is why that transition is tested at all.
+- **An arrival is seeded against the anchors the map is actually drawn on.** `pitchFor` moves
+  the whole spiral whenever a group's size changes, so recomputing the anchors on the survey
+  path and seeding against them places an arrival relative to a grid the committed anchors
+  left (measured ~44 units off after one replica was added). `carryForward` prefers the
+  anchor placement carried forward from the previous positions and falls back to the
+  recomputed one only for a group that has none yet.
 - **`settle` is the single owner of the no-overlap floor.** The relaxation only ever proposes;
   every position on both paths is committed through one function, which pushes a body clear of
   the first cell it meets and, after a fixed 64 pushes, falls back to the free ground beyond
@@ -335,6 +349,33 @@ Mutation-checked with a perturbed survey and with a changed seed.
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 — 2026-09-16. Three layers: blind-hunter (14 findings), edge-case-hunter (8), verification-gap (3 + 3 other). Every row verified at the cited location before the verdict.
+
+- **high** — `retain.ts:145-151` + `:193-203`: step 1's `if (here.has(key)) continue` skips RESERVING a present key's retained cells, and step 4 re-commits a returning key's cells with no `settle`. An arrival ordered before the returning key can settle into that unreserved ground, so two reserved hulls intersect. Read at the cited lines and independently reproduced by the edge layer (centres 1.52 apart, radii sum 178.29). Breaks a frozen Always rule and an acceptance criterion. *(blind 1, edge 1, edge 7, edge 8)*
+- **high** — `retain.ts:146`: the same skip drops a SURVIVOR's retained echo entirely on the next survey — it leaves `retained`, is not re-reserved, and its ground is free for the next arrival. Released with no relayout, against AD-37's single release point. Same defect, same line. *(blind 1, edge 2)*
+- **medium** — `retain.ts:199-203`: a returning object's retained cell is committed without the `zoneGone` handling step 3 applies, so a copy can be drawn in a network the survey no longer contains. *(edge 4)*
+- **medium** — `index.ts:131-137`: `carried` requires `placements.length > 0`, undocumented in the function's own doc-comment, so a survey that momentarily places nothing forces a relayout on the NEXT survey and releases every retained cell outside AD-37's release point. *(blind 3, edge 3)*
+- **medium** — `retain.ts:113`: `carryForward` recomputes `anchorsFor` from the current survey, so `pitchFor` changes whenever a group's size changes while committed anchor placements stay put; rung-3 arrivals and echoes are seeded against a grid the map is no longer drawn on. Measured by the gap layer at ≈44 units off after one replica is added. *(gap 2, first half)*
+- **medium** — `layout.stability.test.ts`: `moved()` does `if (was === undefined) continue`, so a placement whose zone or original flag changed is dropped and `expect(moved(...)).toEqual([])` passes vacuously in exactly the transitions where survivor bookkeeping is most likely wrong. Read the helper; confirmed. *(blind 6)*
+- **medium** — `layout.stability.test.ts` / `layout.determinism.test.ts`: no survey anywhere removes or adds a network or a node between two `layout` calls, so the whole `zoneGone` path never executes under test. Pre-verified by the gap layer with a direct run. *(gap 1)*
+- **medium** — `layout.stability.test.ts:169,193`: arrivals on rungs 2 and 3 assert only `toBeDefined()` and disjointness; swapping the rungs or replacing rung 3 with the orphan slot leaves every test green. Pre-verified. *(gap 2, second half)*
+- **medium** — `package.json:23`: `test:determinism` is `vitest run --passWithNoTests determinism`, so AD-32's two-architecture job exits 0 when a rename makes the filter match nothing. Confirmed in `package.json`; the deleted CI step was what guarded it. *(gap 3, edge 6)*
+- **low** — `retain.ts:186-191`: the relabel branch is unreachable. The original is always committed at :174, setting `originalSeen` before the echo loop, and every key carries exactly one original. Dead code, and the story's Implementation Notes describe behaviour that does not ship. *(blind 2, gap other 1)*
+- **low** — `layout.test.ts` `codeOf`: strips `'…'` and backticks but not `"…"`, despite claiming to remove string literals. A future double-quoted `"Date"`, `"Math.cos"` or `"%"` would fail the AD-8 ban check with no banned construct present. Confirmed by reading the three `.replace` calls. *(blind 11)*
+- **low** — `layout.determinism.test.ts:292`: the comment says "one more replica of `web`, everything else equal"; the code is `containers.slice(1)` / `edges.slice(1)`, which removes. The check still fails on drift; the comment is wrong. *(blind 8, gap other 2)*
+- **low** — `relax.ts`: no direct test. `RELAX_PASSES`, the slack-only edge rule, the concentric case and the Jacobi property are pinned only by golden digests, which give no signal about which property broke. *(blind 5)*
+- **low** — `relax.ts` / `space.ts` comments: "78 210 pairs at the reference scale of 396 objects" and "396 objects, so under 80 000 pairs", while `relax` loops over BODIES only (365 at that scale, 66 430 pairs) and the story's own measurement used 416 objects. Three figures, none naming its population. *(blind 9)*
+- **low** — `arrange.ts` returns `sortPlacements(...)` and `index.ts:141` sorts the result again. Confirmed at both sites. *(blind 13, first part)*
+- **low** — `index.ts`: `placementsOf` and `retainedOf` take `key: string`, widening the public surface away from `IdentityKey` — the one surface `scene`, `view-state` and `harness` are to be written against. *(blind 12, typing half)*
+- **low** — `layout.test.ts` `MODES`: three of `Mode`'s four inhabitants; `disjoint` + `nodeBackdrop: true` is never in the table. *(blind 7)*
+- **false** — `blind 10`, that `CURVE_OVERSHOOT = 0.04` is unsound for deformed hulls: `silhouette.test.ts`'s containment test runs `bubbleHull` over `[EAST]`, four bearings AND every bearing at once — the full cap on all 28 — across 200 keys, and asserts `inside(hull) · DENSITY_MAX ≤ reservation − CELL_CLEARANCE`. The bad outcome is asserted against directly, at the worst deform the type permits.
+- **false** — `blind 4`, that `settle`'s 64-push fallback is never exercised and its helpers are unreachable for a test: the gap layer instrumented the suites and measured the fallback taken 102 times, covered by the `isDisjoint` assertions; and a colocated test can import `./space.ts` directly, so nothing is unreachable.
+- **rejected (maybe-false, would be low)** — `edge 5`, a NaN or fractional seed coerced by `drawAt`'s ToInt32: no caller exists yet that supplies a seed, so no path to a non-integer was shown. If it happened the map would still render disjoint — every body would take one identical scatter offset and `settle` would separate them. Settled by a real `view-state` call site, which lands in story 18. The proposed fix adds a guard.
+- **rejected (maybe-false, would be low)** — `blind 14`, that `anchorsFor`'s single global `spread` throws away the zone-size signal: the scatter is a seed, not the result. `ANCHOR_PULL 0.06` over `RELAX_PASSES 24` contracts a body ~77% back toward its anchor, so the arrangement's per-zone footprint is not the seed disc. Settled by measuring the rendered extent of a two-member zone against a two-hundred-member one after relaxation — which is the harness's job (story 6), not a claim this diff settles.
+- **rejected** — `blind 12`, the O(n) scan half: `placementsOf` filters ~400 placements per call, which is microseconds; no named harm.
+- **rejected** — `blind 13`, that `Diff.survivors` and `EMPTY_POSITIONS` are dead: both are exported public surface for `view-state` and `scene`, which are not written yet. Unused inside the package is not dead.
+- **rejected** — `gap other 3`, that the spec's Verification section records 622 tests where the tree now has 624: the fix is to edit this build's spec.
 
 ## Design Notes
 

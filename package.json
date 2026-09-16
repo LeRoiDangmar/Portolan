@@ -20,7 +20,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:determinism": "vitest run --passWithNoTests determinism",
+    "test:determinism": "vitest run determinism",
     "licences": "node scripts/check-licences.mjs",
     "tokens:css": "node scripts/generate-tokens-css.mjs",
     "contrast": "node scripts/check-contrast.mjs"

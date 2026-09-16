@@ -32,8 +32,9 @@ export interface Cell {
  * The reserved cells of one arrangement.
  *
  * Deliberately a list and not an index. An index would be a second structure to keep in
- * AD-7 order, and at the reference scale — 396 objects, so under 80 000 pairs — the list is
- * the cheaper of the two to keep obviously correct.
+ * AD-7 order, and the list is short: at AD-29's reference scale of 396 objects it holds the
+ * 365 body cells, the 11 zone anchors that reserve nothing, and whatever retained cells the
+ * surveys since the last relayout have left.
  */
 export interface Space {
   readonly cells: Cell[];
