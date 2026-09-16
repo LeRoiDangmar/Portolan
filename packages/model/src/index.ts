@@ -20,11 +20,19 @@
 // state, no masking, no colour — those belong to `layout`, `view-state`, `scene` and the
 // rasterisers, and a model that knew one of them is the defect AD-38 exists to prevent.
 //
-// WHAT AD-38 ALSO PUTS HERE AND IS NOT HERE YET: the link-driven silhouette deform and its
-// reservation hull (FR-13, FR-70), network hue and octave from creation order (FR-65), the
-// orphan set and count (FR-35, FR-74), transitive reach at N hops (FR-22, FR-23). AD-38
-// fixes their owning PACKAGE, not their delivery date — they land with the consumers that
-// need them, and the types above leave room for each.
+// THE SILHOUETTE HULL IS ONE FUNCTION, AND THAT IS THE AD-38 ARGUMENT WRITTEN DOWN.
+// `bubbleHull` is what `layout` calls to RESERVE and what `scene` calls to DRAW (AD-9), so
+// the deformed shape cannot differ between the stage that leaves room for it and the stage
+// that paints it. Two hulls differing by a rounding rule is the first example AD-38 gives
+// of the divergence it exists to prevent, and one exported function is the only form of the
+// rule that a reviewer can check by reading a call site. `seedOf` and `drawAt` are exported
+// beside it for the same reason: layout needs seeded draws under AD-8's fixed seed, and a
+// second generator would be a second owner of the randomness AD-6 rests on.
+//
+// WHAT AD-38 ALSO PUTS HERE AND IS NOT HERE YET: network hue and octave from creation order
+// (FR-65), the orphan set and count (FR-35, FR-74), transitive reach at N hops (FR-22,
+// FR-23). AD-38 fixes their owning PACKAGE, not their delivery date — they land with the
+// consumers that need them, and the types above leave room for each.
 
 export type {
   Identified,
@@ -106,10 +114,12 @@ export {
 } from './survey.ts';
 
 export type {
+  BubbleHull,
   BubbleKind,
   ContourPoint,
   CoreRect,
   CubicSegment,
+  HullPoint,
   Point,
   Silhouette,
 } from './silhouette.ts';
@@ -117,12 +127,26 @@ export {
   AMPLITUDE_STEPS,
   BASE_RADIUS,
   BEARINGS,
+  CELL_CLEARANCE,
   CORE_FRACTION,
+  CURVE_OVERSHOOT,
+  DEFORM_BAND_COSINE,
+  DEFORM_BAND_DEGREES,
+  DEFORM_MAX,
+  DENSITY_MAX,
+  NO_LINKS,
+  RESERVATION_FRACTION,
   SILHOUETTE_AMPLITUDE,
   SILHOUETTE_POINTS,
   amplitudeAt,
+  bubbleHull,
   clearsCore,
+  deformAt,
+  deformFalloff,
+  drawAt,
   pointOnSegment,
+  reservationRadius,
+  seedOf,
   silhouette,
 } from './silhouette.ts';
 

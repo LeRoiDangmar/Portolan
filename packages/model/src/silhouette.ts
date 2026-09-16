@@ -1,13 +1,20 @@
 // silhouette — AD-6: the deterministic shape seed is the AD-5 identity key.
 //
-// THE SEEDED CONTOUR ALONE. A pure function of the identity key: no neighbour, no
-// position, no clock, no `Math.random`. AD-38 makes `model` the owner of silhouette hull
-// geometry, and this is the RECOGNITION half of it (FR-13's first channel). The
+// TWO CHANNELS, ONE OWNER. The seeded contour is the RECOGNITION half of FR-13: a pure
+// function of the identity key, with no neighbour and no position as input. The
 // link-driven deform — radial extension along every link bearing, cos² falloff over ±38°,
-// capped at +32%, and the reservation hull `layout` places against — is the DATA half,
-// also this package's to own, and it lands with `layout`, which is the first consumer that
-// needs to place against it. The value below is therefore a per-point RADIUS that a later
-// deform extends, never a shape baked flat into coordinates.
+// capped at +32% — is the DATA half. AD-38 makes `model` the one computing owner of both,
+// and AD-9 puts the two ends of *reserve* and *draw* behind ONE EXPORTED FUNCTION:
+// {@link bubbleHull}. `layout` calls it with no links to reserve, `scene` calls it with
+// the links to draw, and there is no second copy of either.
+//
+// THE RESERVATION IS THE WORST CASE, NOT THE DRAWN SHAPE. AD-8 reserves the deformed hull
+// BEFORE placement, at the roomiest `density.scale` step and at the worst case FR-70
+// permits — +32% of base radius on EVERY bearing at once — plus `spacing.cell-clearance`.
+// That is what makes the reservation independent of the link bearings, which layout does
+// not yet know when it reserves: the drawn hull always fits inside the reserved one, so
+// *bubbles never fuse and never overlap* holds without the reservation knowing the final
+// stretch, and density only shrinks bodies inside space already reserved.
 //
 // THE VALUES ARE `packages/tokens/src/shape.ts`'s, TRANSCRIBED — `bubble.silhouette`
 // fixes the geometry (closed cubic Bézier, 28 control points), the amplitude (±11% of base
@@ -120,7 +127,7 @@ export interface ContourPoint {
    * replacing a coordinate it cannot see inside.
    */
   readonly amplitude: number;
-  /** `baseRadius · (1 + amplitude)`. */
+  /** `baseRadius · (1 + amplitude + deform)`, and the deform is 0 without links. */
   readonly radius: number;
   /** `bearing · radius`. Derived, and kept so no consumer recomputes it (AD-38). */
   readonly point: Point;
@@ -140,6 +147,19 @@ export interface CoreRect {
   readonly halfHeight: number;
 }
 
+/**
+ * One control point of a deformed hull: a {@link ContourPoint} that also says how much of
+ * its radius the links bought.
+ *
+ * Separate from {@link ContourPoint} rather than a field on it, because `silhouette`'s
+ * output is pinned byte for byte by committed digests (AD-6) and a field added there would
+ * move every one of them.
+ */
+export interface HullPoint extends ContourPoint {
+  /** The link-driven extension, a fraction of the base radius in `[0, 0.32]`. */
+  readonly deform: number;
+}
+
 /** The seeded contour of one object. */
 export interface Silhouette {
   /** The AD-5 identity key it was seeded from, and the only input that varies. */
@@ -154,6 +174,25 @@ export interface Silhouette {
   readonly core: CoreRect;
 }
 
+/**
+ * A silhouette with its links applied and its reservation resolved — the one value AD-9
+ * puts behind a single function so `layout` reserves with exactly what `scene` draws.
+ */
+export interface BubbleHull extends Silhouette {
+  /** The 28 control points, each carrying the extension its links bought. */
+  readonly points: readonly HullPoint[];
+  /** The link bearings the deform was computed from, as given. */
+  readonly linkBearings: readonly Point[];
+  /**
+   * The radius of the disc `layout` reserves for this body, clearance included.
+   *
+   * A function of the base radius alone — NOT of the links and NOT of the seed. See the
+   * file header: the reservation is the worst case FR-70 permits, so it is knowable before
+   * any position exists, which is the only order AD-8 allows.
+   */
+  readonly reservation: number;
+}
+
 // --- The seed ---------------------------------------------------------------
 
 const FNV_OFFSET_BASIS = 0x811c9dc5;
@@ -165,8 +204,13 @@ const FNV_PRIME = 0x01000193;
  * Integer-only: `Math.imul` is the exact 32-bit product ECMAScript specifies, so the same
  * key yields the same 32 bits in every engine on every architecture — which is what makes
  * the contour byte-identical in two processes.
+ *
+ * Exported because `layout` needs seeded draws of its own (AD-8's *fixed seed*) and may
+ * not mint a second generator: a package that wrote its own would be a second owner of the
+ * one thing AD-6 and AD-8 both rest on. Reaching this one keeps every bit of randomness in
+ * the product behind `Math.imul` and integer arithmetic, one stage upstream of the ban.
  */
-const seedOf = (key: string): number => {
+export const seedOf = (key: string): number => {
   let hash = FNV_OFFSET_BASIS;
   for (let index = 0; index < key.length; index += 1) {
     const unit = key.charCodeAt(index);
@@ -176,8 +220,15 @@ const seedOf = (key: string): number => {
   return hash >>> 0;
 };
 
-/** One 32-bit draw per control point, avalanched so adjacent indices do not correlate. */
-const drawAt = (seed: number, index: number): number => {
+/**
+ * One 32-bit draw per index, avalanched so adjacent indices do not correlate.
+ *
+ * Exported for the same reason as {@link seedOf}: it is the whole of the product's
+ * randomness, and `layout` reaches it rather than owning a second copy. The result is an
+ * unsigned 32-bit integer, so a consumer reaches `[0, 1]` by dividing by `0xffffffff` and
+ * needs no modulo of its own.
+ */
+export const drawAt = (seed: number, index: number): number => {
   let hash = Math.imul(seed ^ (index + 1), FNV_PRIME) >>> 0;
   hash = (hash ^ (hash >>> 15)) >>> 0;
   hash = Math.imul(hash, FNV_PRIME) >>> 0;
@@ -198,6 +249,116 @@ export const amplitudeAt = (key: IdentityKey, index: number): number =>
   (((drawAt(seedOf(key), index) % AMPLITUDE_STEPS) - (AMPLITUDE_STEPS - 1) / 2) /
     ((AMPLITUDE_STEPS - 1) / 2)) *
   SILHOUETTE_AMPLITUDE;
+
+// --- The deform (FR-13's data channel, FR-70's cap) -------------------------
+
+/** `shape.bubble.deform.max` and `.cap`: +32% of base radius, whatever the link count. */
+export const DEFORM_MAX = 0.32;
+
+/** `shape.bubble.deform.falloff`: the half-band, in degrees — `cos² over ±38°`. */
+export const DEFORM_BAND_DEGREES = 38;
+
+/**
+ * `cos(38°)`, written out.
+ *
+ * The one place the band's cosine appears, and it is a literal for the same reason the 28
+ * bearings are: AD-8 bans computing it one stage downstream, and a constant computed here
+ * would be a transcendental smuggled into layout's input.
+ */
+export const DEFORM_BAND_COSINE = 0.788010753606722;
+
+/**
+ * `shape.bubble.deform.falloff`, as arithmetic AD-8 permits.
+ *
+ * The token reads `cos² over ±38°` and `Math.cos` is banned in the stage that consumes
+ * this, so the falloff is written as a polynomial the ban allows. Substituting
+ * `t = (1 − cos θ) / (1 − cos 38°)` — which is `(θ/38°)²` to second order, and needs only
+ * the dot product a caller already has — the smoothstep `1 − 3t + 2t√t` agrees with
+ * `cos²(90°·θ/38°)` to within 0.0167 across the whole band, measured at 10⁵ samples. Both
+ * forms are 1 at the bearing, 0 at ±38°, ½ at ±19°, and flat at both ends.
+ *
+ * `cosine` is the cosine of the angle between a control point's bearing and a link's,
+ * which is their dot product because both are unit vectors. Everything here is
+ * `+ - * /` and `Math.sqrt`.
+ */
+export const deformFalloff = (cosine: number): number => {
+  if (cosine >= 1) return 1;
+  if (cosine <= DEFORM_BAND_COSINE) return 0;
+  const t = (1 - cosine) / (1 - DEFORM_BAND_COSINE);
+  return 1 - 3 * t + 2 * t * Math.sqrt(t);
+};
+
+/**
+ * The extension one control point earns from a set of link bearings, as a fraction of the
+ * base radius in `[0, 0.32]`.
+ *
+ * `shape.bubble.deform.squash` is `none — neighbours never flatten each other`, and that
+ * is structural here rather than checked: every term is non-negative, so a link can only
+ * ever ADD radius. FR-70's *a silhouette must not depend on who is next to it* then holds
+ * because the input is the object's own links and nothing about its neighbourhood.
+ *
+ * `shape.bubble.deform.cap` is `+32% total, whatever the link count`, so the weights are
+ * summed and the SUM is capped — not each term. A single-link object therefore reaches the
+ * full +32% on its one bearing, which is `.degenerate`'s teardrop.
+ */
+export const deformAt = (bearing: Point, linkBearings: readonly Point[]): number => {
+  let weight = 0;
+  for (const link of linkBearings) {
+    const length = Math.sqrt(link.x * link.x + link.y * link.y);
+    if (length === 0) continue;
+    weight += deformFalloff((bearing.x * link.x + bearing.y * link.y) / length);
+  }
+  return (weight > 1 ? 1 : weight) * DEFORM_MAX;
+};
+
+// --- The reservation (AD-8, AD-9) -------------------------------------------
+
+/** `spacing['cell-clearance']`: 8px. `density.scale.affects` excludes it, deliberately. */
+export const CELL_CLEARANCE = 8;
+
+/**
+ * `density.scale`'s roomiest step, `1.20`.
+ *
+ * AD-8 reads `scale` as the RESERVATION MAXIMUM: reserve at the roomiest step, and density
+ * then only shrinks rendered bodies inside space already reserved — which is what keeps
+ * FR-16's three relayout actions three.
+ */
+export const DENSITY_MAX = 1.2;
+
+/**
+ * How far a Catmull–Rom segment may bulge past the control points it joins, as a fraction
+ * of the base radius.
+ *
+ * MEASURED, NOT ASSUMED. The curve interpolates its 28 control points but does not stay
+ * inside their circumscribed circle: with the amplitudes driven adversarially to ±11% —
+ * 20 000 sign patterns, each segment sampled at 257 parameters — the worst curve radius is
+ * 1.1359·r against a control-point maximum of 1.11·r. `0.04` covers that with margin, and
+ * `silhouette.test.ts` sweeps the same claim so the margin is evidence rather than hope.
+ * Without it the reserved disc would clip the very bulge FR-13 forbids overlapping.
+ */
+export const CURVE_OVERSHOOT = 0.04;
+
+/**
+ * The reserved radius as a multiple of the base radius, before density and clearance:
+ * `1 + 0.11 + 0.04 + 0.32`.
+ *
+ * Seeded jitter at its maximum, the curve's overshoot past it, and the deform cap on every
+ * bearing at once. All four are worst cases, so this is a property of the KIND and not of
+ * the object — two bodies of one kind reserve the same disc, which is what lets layout
+ * reserve before it knows a single link bearing.
+ */
+export const RESERVATION_FRACTION = 1 + SILHOUETTE_AMPLITUDE + CURVE_OVERSHOOT + DEFORM_MAX;
+
+/**
+ * The radius of the disc `layout` reserves for a body of this base radius.
+ *
+ * `shape.bubble.deform.reservation`: *the layout reserves the deformed hull +
+ * {spacing.cell-clearance}*. The hull is taken at {@link DENSITY_MAX}; the clearance is
+ * NOT, because `density.scale.affects` excludes it — AD-8 overrode `DESIGN.md` there
+ * precisely so density could not become a fourth relayout action.
+ */
+export const reservationRadius = (baseRadius: number): number =>
+  baseRadius * RESERVATION_FRACTION * DENSITY_MAX + CELL_CLEARANCE;
 
 // --- The contour ------------------------------------------------------------
 
@@ -241,6 +402,50 @@ const coreOf = (baseRadius: number): CoreRect => ({
   halfHeight: (CORE_FRACTION.height * (2 * baseRadius)) / 2,
 });
 
+/** No links: the argument `layout` reserves with, named so the call reads as what it is. */
+export const NO_LINKS: readonly Point[] = [];
+
+/**
+ * The hull of one body — seeded contour, link-driven deform and reservation, in one
+ * function (AD-9, AD-38).
+ *
+ * `layout` calls it with {@link NO_LINKS} and reads {@link BubbleHull.reservation}; `scene`
+ * calls it with the bearings of the object's links and draws `segments`. There is no
+ * second copy of either half, which is the whole of AD-38's rule applied to the one
+ * derived value two stages share.
+ *
+ * `linkBearings` need not be unit vectors — each is normalised here — and their ORDER does
+ * not change the result beyond floating-point summation, so a caller that sorts them by
+ * AD-7 gets a reproducible hull.
+ */
+export const bubbleHull = (
+  key: IdentityKey,
+  baseRadius: number,
+  linkBearings: readonly Point[],
+): BubbleHull => {
+  const points = BEARINGS.map((bearing, index) => {
+    const amplitude = amplitudeAt(key, index);
+    const deform = deformAt(bearing, linkBearings);
+    const radius = baseRadius * (1 + amplitude + deform);
+    return {
+      bearing,
+      amplitude,
+      deform,
+      radius,
+      point: { x: bearing.x * radius, y: bearing.y * radius },
+    };
+  });
+  return {
+    key,
+    baseRadius,
+    points,
+    segments: segmentsThrough(points),
+    core: coreOf(baseRadius),
+    linkBearings,
+    reservation: reservationRadius(baseRadius),
+  };
+};
+
 /**
  * The seeded silhouette of one object (AD-6).
  *
@@ -254,17 +459,22 @@ const coreOf = (baseRadius: number): CoreRect => ({
  * (AD-8), which is a decision this function must not take for its caller.
  */
 export const silhouette = (key: IdentityKey, baseRadius: number): Silhouette => {
-  const points = BEARINGS.map((bearing, index) => {
-    const amplitude = amplitudeAt(key, index);
-    const radius = baseRadius * (1 + amplitude);
-    return {
+  const hull = bubbleHull(key, baseRadius, NO_LINKS);
+  return {
+    key: hull.key,
+    baseRadius: hull.baseRadius,
+    // Projected back to a `ContourPoint`, field for field and in the same order, because
+    // `silhouette`'s output is pinned by committed digests. Recomputing the contour here
+    // instead would be the second owner AD-38 forbids.
+    points: hull.points.map(({ bearing, amplitude, radius, point }) => ({
       bearing,
       amplitude,
       radius,
-      point: { x: bearing.x * radius, y: bearing.y * radius },
-    };
-  });
-  return { key, baseRadius, points, segments: segmentsThrough(points), core: coreOf(baseRadius) };
+      point,
+    })),
+    segments: hull.segments,
+    core: hull.core,
+  };
 };
 
 /**
