@@ -10,5 +10,6 @@
       "@portolan/*": ["../../boundary/there-is-no-arrow-back-up.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

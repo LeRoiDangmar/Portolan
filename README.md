@@ -69,8 +69,9 @@ names them, plus `harness/`:
 | `chrome`        | React chassis, and only the chassis                                |
 | `harness`       | Synthetic cluster generator and measurement harness                |
 
-Each but `tokens` is an empty, typechecking package today. They exist now so the dependency
-direction is enforced before anything imports anything.
+`tokens` and `model` hold real content; the other ten are empty, typechecking packages
+today. They exist now so the dependency direction is enforced before anything imports
+anything.
 
 ### There is no arrow back up
 
@@ -260,6 +261,67 @@ floor above it. The gate reported it rather than guessing a repair, because the 
 belong to design; design's 36-token rotation moved the whole family and the two low
 readings with it. `test/contrast.test.ts` names that pair explicitly, so a revert cannot
 quietly restore a sub-floor value under a green suite.
+
+### The graph is defined once, and it has a declared wire form
+
+AD-4: one TypeScript package says what a node, a network, a volume, a stack, a service
+and a container are, and both the collector and the renderer import it. AD-42 is the
+sharper half — shared types alone guarantee nothing across the SSE boundary, so the
+server would serialise one way, the client reconstruct another, and _one definition_
+would hold only in the type checker.
+
+`packages/model` therefore holds both, and it **imports nothing** and **holds nothing
+across calls**.
+
+**Every identity key is qualified by object kind** (AD-5). `volume:web` and `network:web`
+are two objects; an unqualified key would make them one, with one silhouette and one
+retained cell. Within a kind: a replicated task is `stack/service/slot`, a global task
+`stack/service/node`, a volume or network its name, a node or service its Docker ID. A
+standalone service takes an empty first segment — `container:/adhoc/1` — which no stack
+name can collide with. `src/identity.ts` owns the builders, the parser and **the one
+total-order comparator** (AD-7): the collector sorts with the same function the model
+seeds and looks up with, or AD-7 is unenforceable. It compares by UTF-16 code unit and
+not `localeCompare`, whose result depends on a locale and an ICU version.
+
+**Health is counted facts** — `running` and `desired`, never a verdict (FR-12, FR-72) —
+and an object with no health dimension carries **no health value at all**: the dimension
+is absent from the type, not present and null. Docker's node availability and state, and
+a task's desired versus actual state, travel as **raw facts for FR-25's factual panel
+only**: no health mark, no colour, no classification. They are carried because omitting
+them would leave a drained or unreachable node reading exactly like a healthy one on a
+map whose whole promise is honesty.
+
+**The model is wire-representable by construction.** Its types are already JSON values —
+plain objects and arrays, no `Map`, no `Set`, no class instance, no back-reference — so
+the two forms differ in _validation_ rather than in shape. `toWire` rebuilds field by
+field and `fromWire` earns its keep: the SSE payload is untrusted text, so it parses,
+checks and **throws naming the path that failed**, never returning a partial survey.
+Written the other way round — a rich in-memory model with `Map` indices — the round-trip
+test passes and the conversion becomes the place the two ends drift, which is what AD-42
+exists to stop. `packages/model/src/wire.test.ts` runs the model → wire → model round
+trip AD-42 asks for by name, over a fixture exercising every type, plus every
+malformed-payload case; and `WireFormMatchesModel` in `wire.ts` makes the **type
+checker** reject a wire form that has drifted from the model, on the build that
+introduced the drift, which no round-trip test can catch.
+
+**The silhouette ships as the seed alone** (AD-6). A closed 28-point cubic Bézier at
+±11% of base radius, a pure function of the identity key, with no neighbour and no
+position as input — the values are `packages/tokens/src/shape.ts`'s `bubble.silhouette`,
+`bubble.core` and `bubble.radius`, transcribed because this package imports nothing.
+AD-38's link-driven deform, its cos² falloff and the reservation hull are also this
+package's to own and land with `layout`, the first consumer that needs to place against
+them; the contour is therefore a per-point _radius_ a deform extends, never a shape baked
+flat into coordinates.
+
+**No transcendental, one stage upstream of the ban.** AD-8 forbids `Math.sin`, `cos`,
+`pow` and their kin inside `layout` so determinism survives Chromium, Firefox and Safari
+without a test proving it. The silhouette is an _input_ to layout's reservation, so a
+transcendental here would defeat the ban from outside it. The 28 control points sit at
+fixed angles, so their sines and cosines are 28 literal constants, and everything else is
+`+ - * /` and `Math.imul` — all exactly specified by IEEE 754 and ECMAScript.
+`silhouette.test.ts` re-derives the seed from FNV-1a's published constants independently
+of the module, and asserts the contour never crosses the invariant core rectangle at any
+point on the curve, not only at its 28 anchors.
 
 ### AGPLv3 compatibility is a gate, not an audit
 
