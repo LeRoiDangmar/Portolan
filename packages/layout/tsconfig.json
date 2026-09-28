@@ -1,4 +1,5 @@
 {
+  "$comment": "`./x.ts` import specifiers, as in packages/model: `rewriteRelativeImportExtensions` turns them into `./x.js` on emit, so dist/ is still ordinary ESM. Tests are excluded from the build and typechecked by tsconfig.tools.json instead.",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
@@ -6,6 +7,8 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "lib": ["es2024", "dom", "dom.iterable"],
     "types": [],
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "paths": {
       "@portolan/model": ["../../packages/model/src/index.ts"],
       "@portolan/tokens": ["../../packages/tokens/src/index.ts"],

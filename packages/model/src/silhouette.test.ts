@@ -2,15 +2,26 @@ import { describe, expect, it } from 'vitest';
 
 import type { IdentityKey } from './identity.ts';
 import { networkKey, replicatedTaskKey, volumeKey } from './identity.ts';
-import type { Silhouette } from './silhouette.ts';
+import type { BubbleHull, Point, Silhouette } from './silhouette.ts';
 import {
   BASE_RADIUS,
   BEARINGS,
+  CELL_CLEARANCE,
   CORE_FRACTION,
+  CURVE_OVERSHOOT,
+  DEFORM_BAND_COSINE,
+  DEFORM_BAND_DEGREES,
+  DEFORM_MAX,
+  DENSITY_MAX,
+  NO_LINKS,
+  RESERVATION_FRACTION,
   SILHOUETTE_AMPLITUDE,
   SILHOUETTE_POINTS,
+  bubbleHull,
   clearsCore,
+  deformFalloff,
   pointOnSegment,
+  reservationRadius,
   silhouette,
 } from './silhouette.ts';
 
@@ -168,5 +179,190 @@ describe('the core is invariant (`shape.bubble.core`)', () => {
       core: { halfWidth: BASE_RADIUS.container, halfHeight: BASE_RADIUS.container },
     };
     expect(crossesCore(swollen)).toBe(true);
+  });
+});
+
+/**
+ * A spread of link bearings, written as unit vectors at angles chosen by hand rather than
+ * computed, so the fixture itself carries no transcendental into a file that is one stage
+ * upstream of AD-8's ban. Each is `(cos θ, sin θ)` for the θ named beside it.
+ */
+const EAST: Point = { x: 1, y: 0 };
+const NORTH: Point = { x: 0, y: 1 };
+const WEST: Point = { x: -1, y: 0 };
+const SOUTH: Point = { x: 0, y: -1 };
+/** Deliberately not a unit vector: `deformAt` must normalise what it is given. */
+const LONG_EAST: Point = { x: 17, y: 0 };
+
+const radii = (hull: BubbleHull): readonly number[] => hull.points.map((point) => point.radius);
+
+describe('the deform is `shape.bubble.deform`, transcribed', () => {
+  it('reads the cap and the band from the token file', () => {
+    expect(DEFORM_MAX).toBe(0.32);
+    expect(DEFORM_BAND_DEGREES).toBe(38);
+  });
+
+  it('agrees with `cos² over ±38°` across the whole band', () => {
+    // The one place `Math.cos` is allowed: a TEST may compute the transcendental the stage
+    // may not, which is what makes this a check of the polynomial rather than a restatement
+    // of it. `DEFORM_BAND_COSINE` is re-derived here too, from the band in degrees.
+    const band = (DEFORM_BAND_DEGREES * Math.PI) / 180;
+    expect(DEFORM_BAND_COSINE).toBeCloseTo(Math.cos(band), 15);
+    let worst = 0;
+    for (let step = 0; step <= 2000; step += 1) {
+      const angle = (band * step) / 2000;
+      const target = Math.cos((Math.PI / 2) * (angle / band)) ** 2;
+      worst = Math.max(worst, Math.abs(deformFalloff(Math.cos(angle)) - target));
+    }
+    // The measured agreement recorded in `silhouette.ts`. A looser bound would let the
+    // polynomial drift; a tighter one would fail on the same arithmetic.
+    expect(worst).toBeLessThanOrEqual(0.017);
+  });
+
+  it('is 1 on the bearing, ½ at half the band and 0 at its edge and beyond', () => {
+    expect(deformFalloff(1)).toBe(1);
+    expect(deformFalloff(Math.cos((19 * Math.PI) / 180))).toBeCloseTo(0.5, 1);
+    expect(deformFalloff(DEFORM_BAND_COSINE)).toBe(0);
+    expect(deformFalloff(Math.cos((39 * Math.PI) / 180))).toBe(0);
+    expect(deformFalloff(-1)).toBe(0);
+  });
+
+  it('caps at +32% of base radius whatever the link count', () => {
+    const key = replicatedTaskKey('blog', 'web', 3);
+    for (const links of [
+      [EAST],
+      [EAST, EAST],
+      [EAST, EAST, EAST, EAST, EAST, EAST, EAST, EAST],
+      [EAST, NORTH, WEST, SOUTH],
+      Array.from({ length: 40 }, () => EAST),
+    ]) {
+      for (const point of bubbleHull(key, BASE_RADIUS.container, links).points) {
+        expect(point.deform).toBeGreaterThanOrEqual(0);
+        expect(point.deform).toBeLessThanOrEqual(DEFORM_MAX);
+        expect(point.radius).toBeLessThanOrEqual(
+          BASE_RADIUS.container * (1 + SILHOUETTE_AMPLITUDE + DEFORM_MAX),
+        );
+      }
+    }
+  });
+
+  it('reaches the full cap on a single link bearing — `.degenerate`, the teardrop', () => {
+    // Bearing 0 is due east, so a single eastward link puts the whole cap on it.
+    const hull = bubbleHull(replicatedTaskKey('blog', 'web', 3), BASE_RADIUS.container, [EAST]);
+    expect(hull.points[0]?.deform).toBeCloseTo(DEFORM_MAX, 15);
+    // And nothing at all on the opposite side, which is what makes it a teardrop.
+    expect(hull.points[14]?.deform).toBe(0);
+  });
+
+  it('normalises the bearings it is given', () => {
+    const key = volumeKey('pgdata');
+    expect(radii(bubbleHull(key, BASE_RADIUS.volume, [LONG_EAST]))).toEqual(
+      radii(bubbleHull(key, BASE_RADIUS.volume, [EAST])),
+    );
+  });
+
+  it('only ever adds radius — `.squash` is `none`', () => {
+    // FR-70: neighbours never flatten each other. Every point of a linked hull is at least
+    // where the undeformed contour put it, for every key and every link set.
+    for (const key of KEYS) {
+      const bare = silhouette(key, BASE_RADIUS.container);
+      for (const links of [[EAST], [NORTH, SOUTH], [EAST, NORTH, WEST, SOUTH]]) {
+        const hull = bubbleHull(key, BASE_RADIUS.container, links);
+        hull.points.forEach((point, index) => {
+          expect(point.radius).toBeGreaterThanOrEqual(bare.points[index]?.radius ?? Infinity);
+        });
+      }
+    }
+  });
+
+  it('does not depend on who is next to it, only on its own links (FR-70)', () => {
+    // The same object, the same links, on two different imagined neighbourhoods: there is
+    // no neighbour parameter to pass, which is the structural form of the guarantee. What
+    // is checkable is that the amplitude channel is untouched by the deform, so the
+    // recognition silhouette survives every link count.
+    const key = replicatedTaskKey('blog', 'web', 3);
+    const bare = silhouette(key, BASE_RADIUS.container).points.map((point) => point.amplitude);
+    for (const links of [[], [EAST], [EAST, NORTH, WEST, SOUTH]]) {
+      expect(bubbleHull(key, BASE_RADIUS.container, links).points.map((p) => p.amplitude)).toEqual(
+        bare,
+      );
+    }
+    expect(bubbleHull.length).toBe(3);
+  });
+
+  it('is the seeded contour exactly when there are no links', () => {
+    for (const key of KEYS) {
+      for (const radius of Object.values(BASE_RADIUS)) {
+        const hull = bubbleHull(key, radius, NO_LINKS);
+        const bare = silhouette(key, radius);
+        expect(hull.segments).toEqual(bare.segments);
+        expect(hull.core).toEqual(bare.core);
+        expect(radii(hull)).toEqual(bare.points.map((point) => point.radius));
+        for (const point of hull.points) expect(point.deform).toBe(0);
+      }
+    }
+  });
+});
+
+describe('the reservation is the worst case, not the drawn shape (AD-8, AD-9)', () => {
+  it('reads the clearance, the density maximum and the cap from the token files', () => {
+    expect(CELL_CLEARANCE).toBe(8);
+    expect(DENSITY_MAX).toBe(1.2);
+    // Re-derived rather than imported: jitter, overshoot and cap, each a worst case.
+    expect(RESERVATION_FRACTION).toBeCloseTo(1 + 0.11 + 0.04 + 0.32, 15);
+    expect(reservationRadius(BASE_RADIUS.container)).toBeCloseTo(46 * 1.47 * 1.2 + 8, 12);
+  });
+
+  it('depends on the base radius alone — not on the key and not on the links', () => {
+    const reservations = new Set(
+      KEYS.flatMap((key) =>
+        [[], [EAST], [EAST, NORTH, WEST, SOUTH]].map(
+          (links) => bubbleHull(key, BASE_RADIUS.container, links).reservation,
+        ),
+      ),
+    );
+    expect(reservations.size).toBe(1);
+  });
+
+  it('contains the drawn contour everywhere on the curve, at every link set', () => {
+    // The floor the whole no-overlap promise rests on: what layout reserved must hold what
+    // scene draws, at the maximum density step and at the cap on every bearing at once.
+    const inside = (hull: BubbleHull): number => {
+      let worst = 0;
+      for (const segment of hull.segments) {
+        for (let step = 0; step <= 64; step += 1) {
+          const point = pointOnSegment(segment, step / 64);
+          worst = Math.max(worst, Math.sqrt(point.x * point.x + point.y * point.y));
+        }
+      }
+      return worst;
+    };
+    const everyBearing = [...BEARINGS];
+    for (const key of SWEEP.slice(0, 200)) {
+      for (const links of [[EAST], [EAST, NORTH, WEST, SOUTH], everyBearing]) {
+        const hull = bubbleHull(key, BASE_RADIUS.container, links);
+        // Drawn at the roomiest density step, which is where the reservation was taken.
+        expect(inside(hull) * DENSITY_MAX).toBeLessThanOrEqual(hull.reservation - CELL_CLEARANCE);
+      }
+    }
+  });
+
+  it('would fail if the overshoot allowance were dropped', () => {
+    // Mutation check on the allowance itself: the Catmull-Rom bulge really does pass the
+    // control points, so `CURVE_OVERSHOOT` is load-bearing and not decoration.
+    let worst = 0;
+    for (const key of SWEEP) {
+      const contour = silhouette(key, BASE_RADIUS.container);
+      for (const segment of contour.segments) {
+        for (let step = 0; step <= 64; step += 1) {
+          const point = pointOnSegment(segment, step / 64);
+          worst = Math.max(worst, Math.sqrt(point.x * point.x + point.y * point.y));
+        }
+      }
+    }
+    expect(worst / BASE_RADIUS.container).toBeGreaterThan(1 + SILHOUETTE_AMPLITUDE);
+    expect(worst / BASE_RADIUS.container).toBeLessThanOrEqual(
+      1 + SILHOUETTE_AMPLITUDE + CURVE_OVERSHOOT,
+    );
   });
 });

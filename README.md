@@ -69,9 +69,9 @@ names them, plus `harness/`:
 | `chrome`        | React chassis, and only the chassis                                |
 | `harness`       | Synthetic cluster generator and measurement harness                |
 
-`tokens` and `model` hold real content; the other ten are empty, typechecking packages
-today. They exist now so the dependency direction is enforced before anything imports
-anything.
+`tokens`, `model` and `layout` hold real content; the other nine are empty, typechecking
+packages today. They exist now so the dependency direction is enforced before anything
+imports anything.
 
 ### There is no arrow back up
 
@@ -308,10 +308,20 @@ introduced the drift, which no round-trip test can catch.
 ±11% of base radius, a pure function of the identity key, with no neighbour and no
 position as input — the values are `packages/tokens/src/shape.ts`'s `bubble.silhouette`,
 `bubble.core` and `bubble.radius`, transcribed because this package imports nothing.
-AD-38's link-driven deform, its cos² falloff and the reservation hull are also this
-package's to own and land with `layout`, the first consumer that needs to place against
-them; the contour is therefore a per-point _radius_ a deform extends, never a shape baked
-flat into coordinates.
+
+**The hull is one exported function, and that is AD-38 written down.** `bubbleHull` applies
+the link-driven deform — radial extension along every link bearing, capped at +32% whatever
+the link count — and resolves the reservation. `layout` calls it with no links to _reserve_,
+`scene` calls it with the links to _draw_ (AD-9), and there is no second copy of either. Two
+hulls differing by a rounding rule is the first example AD-38 gives of the divergence it
+exists to prevent.
+
+The reservation is deliberately **not** the drawn shape: it is the worst case FR-70 permits
+— the seeded jitter at its maximum, the Catmull–Rom overshoot past it (measured, not
+assumed), and the deform cap on every bearing at once — taken at `density.scale`'s roomiest
+step and with `spacing.cell-clearance` added. That is what makes it knowable before any
+position exists, which is the only order AD-8 allows, and it is why density only ever shrinks
+bodies inside space already reserved rather than becoming a fourth relayout action.
 
 **No transcendental, one stage upstream of the ban.** AD-8 forbids `Math.sin`, `cos`,
 `pow` and their kin inside `layout` so determinism survives Chromium, Firefox and Safari
@@ -322,6 +332,69 @@ fixed angles, so their sines and cosines are 28 literal constants, and everythin
 `silhouette.test.ts` re-derives the seed from FNV-1a's published constants independently
 of the module, and asserts the contour never crosses the invariant core rectangle at any
 point on the curve, not only at its 28 anchors.
+
+### Positions are earned and kept
+
+AD-8: `layout` is a pure function of `(model, previousPositions, seed, mode) -> positions`,
+and it is the pipeline's **one stateful stage** — except that its state is its argument, so
+_why did the map move when it should not have_ has exactly one place to look, and that place
+is a function signature.
+
+`mode` carries the zone mode and the node-backdrop flag **and nothing else**. No canvas
+width, no viewport, no device pixel ratio: positions are emitted in an unbounded, unit-less
+space and the camera maps that onto whatever canvas exists (AD-40). A window resize, the
+detail panel opening and a change of text size are camera moves, never relayouts — which
+matters because a measured width passed through a legitimate parameter would make every
+resize a fourth relayout that AD-3's invocation counter could not see.
+
+**The arrangement is a hybrid, and it is two mechanisms on purpose.** `DESIGN.md` says the
+zone owns position; the zone study's variant 4 lets the edges lead. Following either alone
+contradicts the other, so each network gets an anchor placed by a deterministic rule
+(`anchors.ts`), members are seeded around the anchor of their dominant zone, and a fixed
+number of relaxation passes then opens the edges (`relax.ts`). The accepted cost is two
+mechanisms, each needing its own test.
+
+The anchor rule is a **square spiral over the AD-7 key order**, and that is not an aesthetic
+choice: a ring of zones needs `(r·cos θ, r·sin θ)` and AD-8 bans both. The dominant zone of
+a multi-network object is the **smallest** it belongs to, ties broken by key order, because
+the smallest zone is the one that says most about it.
+
+**Arithmetic is `+ - * /` and `Math.sqrt`, and a test asserts it over the package's own
+sources.** `Math.random`, every clock read and every transcendental are banned inside the
+stage. The reason is not cross-architecture reproducibility but cross-**browser**: layout
+runs in Chromium, Firefox and Safari (NFR-16), which AD-32's matrix does not test, and the
+transcendentals are implementation-approximated by ECMAScript deliberately. The check names
+what is _allowed_ rather than what is banned — `Math.sqrt` and nothing else — because a list
+of forbidden names is a list someone has to keep complete. The one seeded generator the stage
+uses is `model`'s `seedOf` / `drawAt`, which is integer-only `Math.imul`.
+
+`shape.bubble.deform.falloff` reads `cos² over ±38°`, and it is the one token that cannot be
+transcribed literally. Substituting `t = (1 − cos θ) / (1 − cos 38°)` — which needs only the
+dot product a caller already has — the smoothstep `1 − 3t + 2t√t` agrees with `cos²` to
+within 0.0167 across the band, and `silhouette.test.ts` computes the real cosine to check it.
+
+**One key maps to one or more placements, exactly one of which is the original.** FR-40's
+disjoint zone mode draws a multi-network object once per zone, so a key-to-point map would
+make that mode inexpressible. All three branches of `mode` ship together for that reason:
+the shape is fixed here and no later story reopens it.
+
+**Determinism and stability are two properties and neither substitutes for the other.**
+Determinism is _same input, same output_ and is tested by replay, with golden digests
+committed by a process that has already exited —
+`packages/layout/src/layout.determinism.test.ts`, which is what CI's two-architecture matrix
+filters on. Stability is _changed input, almost unchanged output_ and is invisible to a
+determinism test, because a determinism test never changes its input —
+`layout.stability.test.ts` replays the five transitions AD-37 names. The sharp one is a
+`docker stack deploy`: every container ID changes, every slot survives, and a correct build
+moves **nothing at all**.
+
+A vanished object's cell is **retained** and released only at the next relayout (AD-37) —
+not on a timer, not when an exit animation ends. `layout` creates it and `layout` releases
+it, and the release is the arrangement path simply not carrying it forward.
+
+A stack never gets a position: FR-82 makes the outline _derived_, so it follows where layout
+put its members and never asks. Likewise only one partition anchors at a time — networks
+with the backdrop off, nodes with it on (FR-41).
 
 ### AGPLv3 compatibility is a gate, not an audit
 
@@ -367,9 +440,10 @@ composite to a single tint — so the worst case is a loop over six tints, compu
 colour values alone. The scene resolves the composite for rendering (AD-9); the gate
 never needed it to know what the worst one is.
 
-The determinism job runs the two-architecture matrix today and asserts nothing: the AD-8
-suite arrives with the `layout` package, and until it does the job prints a warning
-annotation saying so. Nothing else in CI passes with no tests.
+The determinism job asserts on both architectures. `test:determinism` is a filename filter
+on `determinism`, and two suites answer to it: the AD-8 layout suite, in all three modes and
+with committed golden digests, and the AD-6 silhouette suite it reserves against. The
+warning step that stood in for them until the `layout` package existed is gone with them.
 
 Commit-message and branch-name rules are enforced by the versioned hooks in `.githooks/`,
 not by CI. Activate them once per clone:
